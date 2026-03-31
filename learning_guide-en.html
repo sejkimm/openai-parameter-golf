@@ -1,0 +1,1823 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>train_gpt.py Step-by-Step Learning Guide</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Google+Sans+Flex:wght@400;500;600;700;800&family=Google+Sans+Code:wght@400;500&family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap');
+:root {
+  /* Base B&W palette — dark background */
+  --bg: #0a0a0a; --bg2: #111111; --card: #141414; --card2: #1a1a1a;
+  --text: #e8e8e8; --t2: #b0b0b0; --t3: #787878; --t4: #505050; --t5: #333333;
+  --white: #f0f0f0; --border: #222222; --border2: #2a2a2a;
+
+  /* Low-saturation accent gradation: purple → red → blue */
+  --ac-purple: #8a7191; --ac-purple-dim: #5e4d65;
+  --ac-red: #91706e; --ac-red-dim: #6b4f4d;
+  --ac-blue: #6e7d91; --ac-blue-dim: #4d5a6b;
+  /* Even subtler tints for backgrounds */
+  --ac-purple-bg: rgba(138,113,145,.07); --ac-red-bg: rgba(145,112,110,.07); --ac-blue-bg: rgba(110,125,145,.07);
+
+  /* Gruvbox Material Hard Dark — code theme */
+  --gb-bg: #000000; --gb-fg: #d4be98; --gb-gray: #665c54; --gb-red: #ea6962;
+  --gb-green: #a9b665; --gb-yellow: #d8a657; --gb-blue: #7daea3; --gb-purple: #d3869b;
+  --gb-aqua: #89b482; --gb-orange: #e78a4e;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+::selection{background:var(--ac-purple-dim);color:var(--white)}
+body{background:var(--bg);color:var(--text);font-family:'Google Sans Flex','IBM Plex Sans KR',-apple-system,BlinkMacSystemFont,sans-serif;line-height:1.7;-webkit-font-smoothing:antialiased}
+.wrap{max-width:880px;margin:0 auto;padding:48px 28px 80px}
+
+h1{font-size:32px;font-weight:800;letter-spacing:-.02em;color:var(--white);margin-bottom:6px}
+.sub{font-size:13px;color:var(--t3);margin-bottom:0;letter-spacing:.01em}
+
+/* Progress */
+.progress-bar{height:2px;background:var(--t5);margin:28px 0 32px;border-radius:1px;overflow:hidden}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--ac-purple),var(--ac-red),var(--ac-blue));transition:width .5s cubic-bezier(.4,0,.2,1);border-radius:1px}
+
+/* Nav */
+.chapters{display:flex;gap:0;margin-bottom:40px;border-bottom:1px solid var(--border);overflow-x:auto}
+.ch-btn{padding:12px 20px;font-size:12px;font-weight:500;color:var(--t3);background:none;border:none;border-bottom:2px solid transparent;cursor:pointer;white-space:nowrap;transition:all .2s;letter-spacing:.01em;font-family:inherit}
+.ch-btn:hover{color:var(--t2)}
+.ch-btn.active{color:var(--white);border-bottom-color:var(--ac-purple);font-weight:600}
+
+.chapter{display:none}.chapter.active{display:block}
+
+/* Intro */
+.intro-box{border:1px solid var(--border);border-radius:16px;padding:28px 32px;margin-bottom:32px;background:var(--card)}
+.intro-box h2{font-size:22px;font-weight:700;margin-bottom:12px;color:var(--white);letter-spacing:-.01em}
+.intro-box .tag{display:inline-block;font-size:10px;font-weight:600;padding:3px 10px;border-radius:20px;margin-right:6px;margin-bottom:10px;letter-spacing:.04em;text-transform:uppercase}
+.tag-ch{background:var(--ac-purple-dim);color:var(--white)}
+.tag-topic{background:var(--border2);color:var(--t2)}
+.intro-box p{font-size:13.5px;color:var(--t2);line-height:1.85}
+.intro-box strong{color:var(--white)}
+
+/* Concept cards */
+.concept{background:var(--card);border:1px solid var(--border);border-radius:14px;margin-bottom:14px;overflow:hidden;transition:all .25s}
+.concept:hover{border-color:var(--t5)}
+.concept-head{padding:20px 24px;cursor:pointer;display:flex;align-items:center;gap:14px}
+.concept-head .arrow{font-size:10px;color:var(--t4);transition:transform .25s;flex-shrink:0}
+.concept.open .concept-head .arrow{transform:rotate(90deg);color:var(--ac-purple)}
+.concept-head .num{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;border:1.5px solid var(--t5);color:var(--t3);background:transparent}
+.concept.open .concept-head .num{background:var(--white);color:var(--bg);border-color:var(--white)}
+.concept-head h3{font-size:14px;font-weight:600;flex:1;color:var(--t2)}
+.concept.open .concept-head h3{color:var(--white)}
+.concept-head .brief{font-size:11px;color:var(--t4);margin-left:auto;white-space:nowrap}
+.concept-body{display:none;padding:0 24px 22px}
+.concept.open .concept-body{display:block;padding-top:18px;border-top:1px solid var(--border)}
+.concept-body p{font-size:13px;color:var(--t2);line-height:1.9;margin-bottom:14px}
+.concept-body p:last-child{margin-bottom:0}
+.concept-body strong{color:var(--white)}
+
+/* Inline code */
+code{background:var(--bg2);color:var(--gb-fg);padding:2px 7px;border-radius:5px;font-size:11.5px;font-family:'Google Sans Code',monospace;border:1px solid var(--border)}
+
+/* Code blocks — Gruvbox Material Hard #000 */
+.codeblock{background:var(--gb-bg);border:1px solid var(--border);border-radius:12px;padding:18px 22px;margin:14px 0;font-family:'Google Sans Code',monospace;font-size:11.5px;line-height:1.9;overflow-x:auto;color:var(--gb-fg);white-space:pre}
+.codeblock .kw{color:var(--gb-red)}.codeblock .fn{color:var(--gb-green);font-weight:500}.codeblock .num{color:var(--gb-purple)}
+.codeblock .cm{color:var(--gb-gray);font-style:italic}.codeblock .str{color:var(--gb-yellow)}.codeblock .op{color:var(--gb-orange)}
+.codeblock .bi{color:var(--gb-blue)}.codeblock .aq{color:var(--gb-aqua)}
+
+/* Diagrams */
+.dia{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:24px;margin:16px 0;overflow-x:auto}
+.dia svg{width:100%;min-width:600px}
+.dia svg text{font-family:'Google Sans Flex','IBM Plex Sans KR',-apple-system,sans-serif}
+
+/* Highlights — low-sat accent tints */
+.highlight{border-radius:12px;padding:18px 22px;margin:16px 0;font-size:12.5px;line-height:1.85}
+.highlight strong{display:inline}
+.hl-purple{background:var(--ac-purple-bg);border:1px solid var(--ac-purple-dim);color:var(--t2)}
+.hl-purple strong{color:var(--ac-purple)}
+.hl-red{background:var(--ac-red-bg);border:1px solid var(--ac-red-dim);color:var(--t2)}
+.hl-red strong{color:var(--ac-red)}
+.hl-blue{background:var(--ac-blue-bg);border:1px solid var(--ac-blue-dim);color:var(--t2)}
+.hl-blue strong{color:var(--ac-blue)}
+.hl-white{background:var(--card2);border:1px solid var(--border);color:var(--t2)}
+.hl-white strong{color:var(--white)}
+
+/* Analogy */
+.analogy{background:var(--card2);border-left:3px solid var(--t4);border-radius:0 12px 12px 0;padding:18px 22px;margin:16px 0}
+.analogy::before{content:"ANALOGY";display:block;font-size:9px;font-weight:700;color:var(--t4);letter-spacing:.1em;margin-bottom:6px}
+.analogy p{font-size:12.5px;color:var(--t2);line-height:1.85}
+
+/* Quiz */
+.quiz{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:24px;margin:24px 0}
+.quiz h4{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ac-purple);margin-bottom:14px}
+.quiz>p{font-size:13px;color:var(--t2);margin-bottom:14px}
+.quiz-opt{display:block;width:100%;text-align:left;padding:12px 18px;margin-bottom:8px;background:var(--bg2);border:1px solid var(--border);border-radius:10px;color:var(--t2);font-size:12.5px;cursor:pointer;transition:all .15s;font-family:inherit}
+.quiz-opt:hover{border-color:var(--t4);color:var(--white);background:var(--card2)}
+.quiz-opt.correct{background:var(--white);border-color:var(--white);color:var(--bg)}
+.quiz-opt.wrong{background:var(--bg);border-color:var(--border);color:var(--t4);text-decoration:line-through}
+.quiz-explain{display:none;margin-top:14px;font-size:12.5px;color:var(--t2);line-height:1.8;padding:16px 18px;background:var(--bg2);border-radius:10px;border:1px solid var(--border)}
+
+/* Table */
+.tbl{width:100%;border-collapse:collapse;margin:14px 0;font-size:12.5px}
+.tbl th{text-align:left;padding:12px 16px;background:var(--bg2);color:var(--t3);font-weight:600;border-bottom:1px solid var(--border);font-size:11px;letter-spacing:.02em;text-transform:uppercase}
+.tbl td{padding:12px 16px;border-bottom:1px solid var(--border);color:var(--t2)}
+.tbl tr:hover td{background:var(--card2)}
+
+/* Next chapter */
+.next-ch{display:inline-flex;align-items:center;gap:8px;margin-top:32px;padding:14px 32px;background:var(--white);color:var(--bg);border:none;border-radius:12px;font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;font-family:inherit;letter-spacing:.01em}
+.next-ch:hover{opacity:.85;transform:translateY(-1px);box-shadow:0 4px 20px rgba(255,255,255,.08)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>Understanding train_gpt.py from Scratch</h1>
+<p class="sub">Step-by-Step Learning Guide &mdash; From Tokenizer to Transformer Training</p>
+
+<div class="progress-bar"><div class="progress-fill" id="progress" style="width:9%"></div></div>
+
+<div class="chapters">
+  <button class="ch-btn active" onclick="go(0)">Ch.1 Tokenizer Basics</button>
+  <button class="ch-btn" onclick="go(1)">Ch.2 Project Tokenizer</button>
+  <button class="ch-btn" onclick="go(2)">Ch.3 Binary Shards &amp; Data Loading</button>
+  <button class="ch-btn" onclick="go(3)">Ch.4 Embedding: Numbers to Meaning</button>
+  <button class="ch-btn" onclick="go(4)">Ch.5 Attention: Understanding Context</button>
+  <button class="ch-btn" onclick="go(5)">Ch.6 Full Transformer Block</button>
+  <button class="ch-btn" onclick="go(6)">Ch.7 Multi-Optimizer</button>
+  <button class="ch-btn" onclick="go(7)">Ch.8 Training Loop</button>
+  <button class="ch-btn" onclick="go(8)">Ch.9 Quantization</button>
+  <button class="ch-btn" onclick="go(9)">Ch.10 bits-per-byte</button>
+  <button class="ch-btn" onclick="go(10)">Ch.11 Test-Time Training</button>
+</div>
+<!-- ====== CHAPTER 1 ====== -->
+<div class="chapter active" id="ch0">
+  <div class="intro-box">
+    <span class="tag tag-ch">Chapter 1</span>
+    <span class="tag tag-topic">Foundation</span>
+    <h2>Tokenizer: The First Gate to Converting Text into Numbers</h2>
+    <p>
+      Computers don't understand text directly. Before a neural network can process text, we first need to convert it into a <strong>sequence of numbers</strong>. That's what a tokenizer does.
+      The tokenizer's design determines how many parameters go to embeddings versus actual learning, and how long each input sequence gets.
+    </p>
+  </div>
+
+  <div class="concept" onclick="this.classList.add('open')">
+    <div class="concept-head">
+      <span class="arrow">&#9654;</span>
+      <span class="num">1</span>
+      <h3>What is a Tokenizer?</h3>
+      <span class="brief">text &rarr; numbers</span>
+    </div>
+    <div class="concept-body">
+      <p>
+        A tokenizer breaks text strings into units called <strong>tokens</strong>, and assigns each token a unique integer ID.
+        For example, the string "Hello world" becomes an integer array like <code>[15496, 995]</code> after tokenization.
+      </p>
+      <p>
+        The reverse process is also possible. Converting an integer array back to text is called <strong>decoding</strong>.
+        A token can be a whole word, part of a word, a single character, or even a byte.
+        Deciding what unit to split on is the core design decision in tokenizer architecture.
+      </p>
+      <div class="dia">
+        <svg viewBox="0 0 700 90">
+          <defs>
+            <marker id="a1" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><polygon points="0 0,7 2.5,0 5" fill="#e8e8e8"/></marker>
+            <marker id="a1d" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><polygon points="0 0,7 2.5,0 5" fill="#787878"/></marker>
+          </defs>
+          <rect x="10" y="20" width="155" height="48" rx="10" fill="#e8e8e8"/>
+          <text x="87" y="42" text-anchor="middle" fill="#0a0a0a" font-size="14" font-weight="700">"Hello world"</text>
+          <text x="87" y="58" text-anchor="middle" fill="#505050" font-size="9">raw text string</text>
+          <line x1="170" y1="44" x2="228" y2="44" stroke="#787878" stroke-width="1.2" marker-end="url(#a1d)"/>
+          <text x="199" y="37" text-anchor="middle" fill="#787878" font-size="9" font-weight="500">tokenize</text>
+          <rect x="233" y="20" width="200" height="48" rx="10" fill="none" stroke="#505050" stroke-width="1.2"/>
+          <text x="333" y="42" text-anchor="middle" fill="#b0b0b0" font-size="14" font-weight="600">["Hello", " world"]</text>
+          <text x="333" y="58" text-anchor="middle" fill="#505050" font-size="9">token sequence</text>
+          <line x1="438" y1="44" x2="498" y2="44" stroke="#787878" stroke-width="1.2" marker-end="url(#a1d)"/>
+          <text x="468" y="37" text-anchor="middle" fill="#787878" font-size="9" font-weight="500">encode</text>
+          <rect x="503" y="20" width="170" height="48" rx="10" fill="#141414" stroke="#505050" stroke-width="1"/>
+          <text x="588" y="42" text-anchor="middle" fill="#e8e8e8" font-size="14" font-weight="700">[15496, 995]</text>
+          <text x="588" y="58" text-anchor="middle" fill="#505050" font-size="9">integer IDs</text>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <div class="concept" onclick="this.classList.add('open')">
+    <div class="concept-head">
+      <span class="arrow">&#9654;</span>
+      <span class="num">2</span>
+      <h3>Why Not Split by Words?</h3>
+      <span class="brief">the vocabulary size problem</span>
+    </div>
+    <div class="concept-body">
+      <p>
+        The most intuitive approach is to split words based on whitespace. But this approach has a serious problem.
+      </p>
+      <p>
+        Even just in English, there are hundreds of thousands of words, and when you include proper nouns, technical terms, and neologisms, the list becomes practically infinite.
+        If your vocabulary has a million words, your model needs an embedding table of size 1,000,000 x dim.
+        With a 16MB constraint like we have in this project, the embedding table consumes most of the budget, leaving almost no parameters for actual learning.
+      </p>
+      <p>
+        If we split into individual characters or bytes instead, the vocabulary shrinks but sequence length explodes.
+        If "Hello" becomes 5 tokens, the model has to process much longer sequences.
+        Since attention computation scales with the square of sequence length, costs skyrocket.
+      </p>
+      <div class="highlight hl-purple">
+        <strong>Core trade-off:</strong> A large vocabulary means a bigger embedding table, but a small vocabulary means longer sequences.
+        The whole game in tokenizer design is finding the right balance between these two.
+      </div>
+    </div>
+  </div>
+
+  <div class="concept" onclick="this.classList.add('open')">
+    <div class="concept-head">
+      <span class="arrow">&#9654;</span>
+      <span class="num">3</span>
+      <h3>BPE: Byte Pair Encoding</h3>
+      <span class="brief">the algorithm behind modern tokenizers</span>
+    </div>
+    <div class="concept-body">
+      <p>
+        Byte Pair Encoding is the most widely-used algorithm for solving this trade-off.
+        GPT, LLaMA, and this project all use BPE-based tokenizers.
+      </p>
+      <p>
+        BPE is simple in principle. First, we decompose the text into the smallest units: individual bytes or characters.
+        Then, we repeatedly identify the most frequent consecutive pair in the training data and merge them into a new token.
+      </p>
+      <div class="analogy">
+        <p>
+          Think of it like letter blocks. At first, you only have blocks with single letters.
+          When "t" and "h" frequently appear side by side, you create a new "th" block by combining them.
+          When "th" and "e" frequently stick together, you create a "the" block too. You repeat this process until you reach your target vocabulary size.
+        </p>
+      </div>
+      <div class="codeblock">
+<span class="cm"># Initial state: decompose all text into individual bytes</span>
+corpus = <span class="str">"the cat sat on the mat"</span>
+tokens = [<span class="str">'t'</span>, <span class="str">'h'</span>, <span class="str">'e'</span>, <span class="str">' '</span>, <span class="str">'c'</span>, <span class="str">'a'</span>, <span class="str">'t'</span>, ...]
+
+<span class="cm"># Step 1: Find the most frequent pair → ('t', 'h') is most common</span>
+<span class="cm"># → Add new token 'th', vocab = [..., 'th']</span>
+
+<span class="cm"># Step 2: Now ('th', 'e') is most frequent</span>
+<span class="cm"># → Add new token 'the', vocab = [..., 'th', 'the']</span>
+
+<span class="cm"># Step 3: (' ', 'the') is frequent</span>
+<span class="cm"># → Add new token ' the'</span>
+
+<span class="cm"># Repeat until reaching desired vocab size</span></div>
+      <p>
+        So common words and word fragments become single tokens, while rare words get broken into multiple tokens.
+        This keeps vocabulary size within our 1024-token budget while still capturing frequent patterns efficiently.
+      </p>
+    </div>
+  </div>
+
+  <div class="concept" onclick="this.classList.add('open')">
+    <div class="concept-head">
+      <span class="arrow">&#9654;</span>
+      <span class="num">4</span>
+      <h3>SentencePiece: A Practical Implementation of BPE</h3>
+      <span class="brief">this project's tokenizer library</span>
+    </div>
+    <div class="concept-body">
+      <p>
+        SentencePiece is a tokenizer library created by Google that actually implements the BPE algorithm.
+        In this project, we use it with <code>import sentencepiece as spm</code>.
+      </p>
+      <p>
+        The key feature of SentencePiece is that it doesn't pre-split text by whitespace.
+        Instead, it treats spaces like any other character, but adds a special symbol <code>&#9601;</code> at word boundaries.
+        For example, "Hello world" becomes <code>["&#9601;Hello", "&#9601;world"]</code>.
+        This <code>&#9601;</code> symbol means "there was a space before this token".
+      </p>
+      <div class="highlight hl-white">
+        <strong>Special tokens:</strong> Beyond normal text tokens, SentencePiece supports control tokens.
+        There are special tokens like BOS (Beginning of Sequence), EOS (End of Sequence), and UNK (Unknown).
+        In this project, we use the BOS token to mark document boundaries.
+      </div>
+    </div>
+  </div>
+
+  <div class="quiz">
+    <h4>Check Your Understanding</h4>
+    <p>What happens when you increase the vocabulary size of a BPE tokenizer?</p>
+    <button class="quiz-opt" onclick="checkQuiz(this,'wrong','q1')">A. Sequence length increases, embedding table shrinks</button>
+    <button class="quiz-opt" onclick="checkQuiz(this,'correct','q1')">B. Sequence length decreases, embedding table grows</button>
+    <button class="quiz-opt" onclick="checkQuiz(this,'wrong','q1')">C. Both sequence length and embedding table shrink</button>
+    <button class="quiz-opt" onclick="checkQuiz(this,'wrong','q1')">D. No change</button>
+    <div class="quiz-explain" id="q1">
+      When vocabulary grows, longer words and phrases can be represented as single tokens, so sequences get shorter.
+      But the embedding table gains more rows, so the table itself gets bigger.
+      We deliberately set vocab=1024, very small, because of the 16MB size constraint.
+    </div>
+  </div>
+
+  <button class="next-ch" onclick="go(1)">Chapter 2: Project Tokenizer &rarr;</button>
+</div>
+
+<!-- ====== CHAPTER 2 ====== -->
+<div class="chapter" id="ch1">
+  <div class="intro-box">
+    <span class="tag tag-ch">Chapter 2</span>
+    <span class="tag tag-topic">Project-Specific</span>
+    <h2>Project Tokenizer: vocab_size = 1024</h2>
+    <p>
+      We set vocab_size to <strong>1024</strong>.
+      Compared to GPT-4's 100,000+ and LLaMA's 32,000, that's about 1% of what most models use.
+      Let's look at how this choice impacts the overall model design.
+    </p>
+  </div>
+
+  <div class="concept" onclick="this.classList.add('open')">
+    <div class="concept-head">
+      <span class="arrow">&#9654;</span>
+      <span class="num">1</span>
+      <h3>Why 1024? The Product of a 16MB Constraint</h3>
+      <span class="brief">computing the size budget</span>
+    </div>
+    <div class="concept-body">
+      <p>
+        The embedding table size is <code>vocab_size x model_dim</code>.
+        In this project, that's <code>1024 x 512 = 524,288</code> parameters.
+        If vocab_size were 32,000, we'd have <code>32,000 x 512 = 16,384,000</code> parameters.
+        In fp32 that's about 62MB, and even quantized to int8 it's about 15.6MB.
+      </p>
+      <table class="tbl">
+        <tr><th>Vocab Size</th><th>Embedding Params</th><th>int8 Size</th><th>Budget Left</th></tr>
+        <tr><td><strong style="color:var(--white)">1,024</strong></td><td><strong style="color:var(--white)">524,288</strong></td><td>~0.5MB</td><td><strong style="color:var(--white)">~15.5MB</strong></td></tr>
+        <tr><td>8,192</td><td>4,194,304</td><td>~4MB</td><td>~12MB</td></tr>
+        <tr><td style="color:var(--t4)">32,000</td><td style="color:var(--t4)">16,384,000</td><td style="color:var(--t4)">~15.6MB</td><td style="color:var(--ac-red)">~0.4MB</td></tr>
+      </table>
+      <div class="highlight hl-red">
+        <strong>Trade-off:</strong> A small vocab means you need more tokens to represent the same text.
+        The word "transformer" takes 1 token with vocab=100K, but gets split into several tokens with vocab=1024.
+        We handle this by fixing seq_len=1024.
+      </div>
+    </div>
+  </div>
+
+  <div class="concept" onclick="this.classList.add('open')">
+    <div class="concept-head">
+      <span class="arrow">&#9654;</span>
+      <span class="num">2</span>
+      <h3>Tied Embedding: One Matrix for Two Jobs</h3>
+      <span class="brief">input &amp; output sharing</span>
+    </div>
+    <div class="concept-body">
+      <p>
+        Usually, a language model has two large matrices.
+        One is the <strong>input embedding</strong>, which converts token IDs to vectors.
+        The other is the <strong>output head</strong>, which converts vectors back into a probability distribution over vocabulary.
+        Tied embedding is a technique where these two matrices share the same weights.
+      </p>
+      <div class="dia">
+        <svg viewBox="0 0 700 125">
+          <rect x="230" y="5" width="240" height="40" rx="8" fill="#e8e8e8"/>
+          <text x="350" y="24" text-anchor="middle" fill="#0a0a0a" font-size="12" font-weight="700">Embedding Matrix W</text>
+          <text x="350" y="40" text-anchor="middle" fill="#505050" font-size="9">(1024, 512) &mdash; single shared matrix</text>
+
+          <line x1="280" y1="48" x2="160" y2="72" stroke="#505050" stroke-width="1" marker-end="url(#a1d)"/>
+          <line x1="420" y1="48" x2="540" y2="72" stroke="#505050" stroke-width="1" marker-end="url(#a1d)"/>
+
+          <rect x="30" y="76" width="250" height="38" rx="8" fill="var(--card)" stroke="var(--border)" stroke-width="1"/>
+          <text x="155" y="93" text-anchor="middle" fill="#b0b0b0" font-size="11" font-weight="600">Input: token ID &rarr; vector</text>
+          <text x="155" y="107" text-anchor="middle" fill="#505050" font-size="9" font-family="'Google Sans Code',monospace">x = W[token_id]</text>
+
+          <rect x="420" y="76" width="250" height="38" rx="8" fill="var(--card)" stroke="var(--border)" stroke-width="1"/>
+          <text x="545" y="93" text-anchor="middle" fill="#b0b0b0" font-size="11" font-weight="600">Output: vector &rarr; logits</text>
+          <text x="545" y="107" text-anchor="middle" fill="#505050" font-size="9" font-family="'Google Sans Code',monospace">logits = x @ W.T</text>
+        </svg>
+      </div>
+      <p>
+        This cuts the parameter count in half and keeps input and output token representations aligned.
+      </p>
+    </div>
+  </div>
+
+  <div class="concept" onclick="this.classList.add('open')">
+    <div class="concept-head">
+      <span class="arrow">&#9654;</span>
+      <span class="num">3</span>
+      <h3>Bits-Per-Byte: A Tokenizer-Independent Evaluation Metric</h3>
+      <span class="brief">the key to fair comparison</span>
+    </div>
+    <div class="concept-body">
+      <p>
+        How do we fairly compare models with different vocabulary sizes? We use <strong>bits-per-byte</strong>.
+        It measures how well the model "compresses" text by counting the number of bits per byte in the original text needed to achieve that compression.
+      </p>
+      <div class="codeblock">
+<span class="cm"># Computing bits-per-byte</span>
+loss_in_nats = <span class="num">2.35</span>
+bits_per_token = loss_in_nats / <span class="bi">ln</span>(<span class="num">2</span>)       <span class="cm"># = 3.39</span>
+tokens_per_byte = total_tokens / total_bytes
+bits_per_byte = bits_per_token <span class="op">*</span> tokens_per_byte</div>
+    </div>
+  </div>
+
+  <div class="concept" onclick="this.classList.add('open')">
+    <div class="concept-head">
+      <span class="arrow">&#9654;</span>
+      <span class="num">4</span>
+      <h3>Real Code: Building SentencePiece Lookup Tables</h3>
+      <span class="brief">train_gpt.py lines 187-211</span>
+    </div>
+    <div class="concept-body">
+      <p>
+        The <code>build_sentencepiece_luts</code> function creates three lookup tables.
+      </p>
+      <div class="codeblock">
+<span class="kw">def</span> <span class="fn">build_sentencepiece_luts</span>(sp, vocab_size, device):
+    <span class="kw">for</span> token_id <span class="kw">in</span> <span class="bi">range</span>(sp_vocab_size):
+        <span class="kw">if</span> sp.<span class="aq">is_control</span>(token_id):  <span class="cm"># Skip BOS, EOS, etc.</span>
+            <span class="kw">continue</span>
+        <span class="kw">if</span> sp.<span class="aq">is_byte</span>(token_id):
+            base_bytes[token_id] = <span class="num">1</span>
+            <span class="kw">continue</span>
+
+        piece = sp.<span class="aq">id_to_piece</span>(token_id)  <span class="cm"># e.g. "▁the"</span>
+        <span class="kw">if</span> piece.<span class="aq">startswith</span>(<span class="str">"▁"</span>):
+            has_leading_space[token_id] = <span class="kw">True</span>
+            piece = piece[<span class="num">1</span>:]
+        base_bytes[token_id] = <span class="bi">len</span>(piece.<span class="aq">encode</span>(<span class="str">"utf-8"</span>))</div>
+      <table class="tbl">
+        <tr><th>Lookup Table</th><th>Purpose</th><th>Example</th></tr>
+        <tr><td><code>base_bytes_lut</code></td><td>UTF-8 byte count for each token</td><td>"the" = 3 bytes</td></tr>
+        <tr><td><code>has_leading_space_lut</code></td><td>Whether token has leading space</td><td>"&#9601;the" = True</td></tr>
+        <tr><td><code>is_boundary_token_lut</code></td><td>Whether token marks document boundary</td><td>BOS = True</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="quiz">
+    <h4>Check Your Understanding</h4>
+    <p>What is the main reason this project uses tied embedding?</p>
+    <button class="quiz-opt" onclick="checkQuiz(this,'wrong','q2')">A. To speed up training</button>
+    <button class="quiz-opt" onclick="checkQuiz(this,'correct','q2')">B. To reduce parameters and fit within the 16MB limit</button>
+    <button class="quiz-opt" onclick="checkQuiz(this,'wrong','q2')">C. To support multilingual data</button>
+    <button class="quiz-opt" onclick="checkQuiz(this,'wrong','q2')">D. To prevent gradient vanishing</button>
+    <div class="quiz-explain" id="q2">
+      Tied embedding makes input embedding and output head share the same weights, cutting parameter count in half.
+      With a 16MB constraint, every parameter matters in this project.
+    </div>
+  </div>
+
+  <button class="next-ch" onclick="go(2)">Chapter 3: Binary Shards and Data Loading &rarr;</button>
+</div>
+
+<!-- ====== CHAPTER 3 ====== -->
+<div class="chapter" id="ch2">
+  <div class="intro-box">
+    <span class="tag tag-ch">Chapter 3</span>
+    <span class="tag tag-topic">Data</span>
+    <h2>Binary Shards and Data Loading</h2>
+    <p>
+      Binary shard files contain the output of tokenizer-converted text into numbers.
+      During training, we need to efficiently read these files and feed them to the model.
+      This chapter traces how data flows from disk to GPU.
+    </p>
+  </div>
+
+  <div class="concept" onclick="this.classList.add('open')">
+    <div class="concept-head">
+      <span class="arrow">&#9654;</span>
+      <span class="num">1</span>
+      <h3>Binary Shard File Structure</h3>
+      <span class="brief">inside the .bin file</span>
+    </div>
+    <div class="concept-body">
+      <div class="dia">
+        <svg viewBox="0 0 700 75">
+          <rect x="10" y="8" width="680" height="56" rx="10" fill="none" stroke="#505050" stroke-width="1"/>
+          <rect x="15" y="13" width="200" height="46" rx="6" fill="#e8e8e8"/>
+          <text x="115" y="32" text-anchor="middle" fill="#0a0a0a" font-size="10" font-weight="700">HEADER (1024 bytes)</text>
+          <text x="115" y="49" text-anchor="middle" fill="#505050" font-size="8.5">[0]=20240520  [1]=1  [2]=token_count</text>
+          <rect x="220" y="13" width="465" height="46" rx="6" fill="var(--card)" stroke="var(--border)" stroke-width="1"/>
+          <text x="452" y="32" text-anchor="middle" fill="#b0b0b0" font-size="10" font-weight="600">TOKEN DATA (uint16 array)</text>
+          <text x="452" y="49" text-anchor="middle" fill="#505050" font-size="8.5">t0  t1  t2  t3  ...  t_{N-1}  &mdash;  each 2 bytes</text>
+        </svg>
+      </div>
+      <div class="codeblock">
+<span class="kw">def</span> <span class="fn">load_data_shard</span>(file):
+    header = np.<span class="aq">fromfile</span>(file, dtype=<span class="str">"&lt;i4"</span>, count=<span class="num">256</span>)
+    <span class="kw">assert</span> header[<span class="num">0</span>] == <span class="num">20240520</span> <span class="kw">and</span> header[<span class="num">1</span>] == <span class="num">1</span>
+    num_tokens = header[<span class="num">2</span>]
+    tokens = np.<span class="aq">fromfile</span>(file, dtype=<span class="str">"&lt;u2"</span>,
+                         count=num_tokens, offset=<span class="num">1024</span>)
+    <span class="kw">return</span> torch.<span class="aq">from_numpy</span>(tokens)</div>
+    </div>
+  </div>
+
+  <div class="concept" onclick="this.classList.add('open')">
+    <div class="concept-head">
+      <span class="arrow">&#9654;</span>
+      <span class="num">2</span>
+      <h3>TokenStream: Endless Data Flow</h3>
+      <span class="brief">sequential read + auto-wrap</span>
+    </div>
+    <div class="concept-body">
+      <div class="analogy">
+        <p>
+          Imagine multiple books sitting on a shelf. TokenStream is like a reading robot that starts with the first book,
+          reads to the end, automatically moves to the next book, and when it reaches the last book, it loops back to the first
+          and keeps reading endlessly.
+        </p>
+      </div>
+      <div class="codeblock">
+<span class="kw">class</span> <span class="fn">TokenStream</span>:
+    <span class="kw">def</span> <span class="fn">take</span>(self, n):
+        chunks = []
+        remaining = n
+        <span class="kw">while</span> remaining > <span class="num">0</span>:
+            avail = self.tokens.<span class="aq">numel</span>() - self.pos
+            <span class="kw">if</span> avail <= <span class="num">0</span>:
+                self.<span class="aq">_advance_file</span>()  <span class="cm"># Move to next shard</span>
+                <span class="kw">continue</span>
+            k = <span class="bi">min</span>(remaining, avail)
+            chunks.<span class="aq">append</span>(self.tokens[self.pos : self.pos + k])
+            self.pos += k
+            remaining -= k
+        <span class="kw">return</span> torch.<span class="aq">cat</span>(chunks)</div>
+      <p>
+        This design is <strong>deterministic</strong>. There's no random shuffling, so if you start with the same seed you always read in the same order.
+      </p>
+    </div>
+  </div>
+
+  <div class="concept" onclick="this.classList.add('open')">
+    <div class="concept-head">
+      <span class="arrow">&#9654;</span>
+      <span class="num">3</span>
+      <h3>DistributedTokenLoader: Distributing Data Across GPUs</h3>
+      <span class="brief">splitting data across 8 GPUs</span>
+    </div>
+    <div class="concept-body">
+      <div class="dia">
+        <svg viewBox="0 0 700 100">
+          <text x="10" y="14" fill="#505050" font-size="9" font-weight="500" letter-spacing=".04em">GLOBAL TOKEN CHUNK</text>
+          <rect x="10" y="22" width="680" height="28" rx="6" fill="none" stroke="#505050" stroke-width="1"/>
+          <rect x="12" y="24" width="165" height="24" rx="4" fill="#e8e8e8"/>
+          <text x="94" y="40" text-anchor="middle" fill="#0a0a0a" font-size="9" font-weight="600">Rank 0</text>
+          <rect x="182" y="24" width="165" height="24" rx="4" fill="#787878"/>
+          <text x="264" y="40" text-anchor="middle" fill="#e8e8e8" font-size="9" font-weight="500">Rank 1</text>
+          <rect x="352" y="24" width="165" height="24" rx="4" fill="#505050"/>
+          <text x="434" y="40" text-anchor="middle" fill="#e8e8e8" font-size="9" font-weight="500">Rank 2</text>
+          <rect x="522" y="24" width="165" height="24" rx="4" fill="#333333"/>
+          <text x="604" y="40" text-anchor="middle" fill="#b0b0b0" font-size="9" font-weight="500">Rank 3</text>
+
+          <text x="350" y="72" text-anchor="middle" fill="#505050" font-size="10">Each rank independently constructs <tspan fill="#b0b0b0" font-family="'Google Sans Code',monospace" font-size="10">x = local[:-1], y = local[1:]</tspan></text>
+          <text x="350" y="90" text-anchor="middle" fill="#505050" font-size="9">per_rank_span = local_tokens + 1 &mdash; extra 1 token needed for shifting</text>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <div class="concept" onclick="this.classList.add('open')">
+    <div class="concept-head">
+      <span class="arrow">&#9654;</span>
+      <span class="num">4</span>
+      <h3>Next-Token Prediction: The Language Model's Learning Goal</h3>
+      <span class="brief">the fundamental principle</span>
+    </div>
+    <div class="concept-body">
+      <div class="dia">
+        <svg viewBox="0 0 700 105">
+          <defs><marker id="a4" markerWidth="6" markerHeight="5" refX="6" refY="2.5" orient="auto"><polygon points="0 0,6 2.5,0 5" fill="#505050"/></marker></defs>
+          <text x="50" y="16" fill="#b0b0b0" font-size="10" font-weight="600" letter-spacing=".02em">INPUT x</text>
+          <text x="50" y="82" fill="#b0b0b0" font-size="10" font-weight="600" letter-spacing=".02em">TARGET y</text>
+
+          <rect x="120" y="3" width="65" height="28" rx="6" fill="#e8e8e8"/>
+          <text x="152" y="21" text-anchor="middle" fill="#0a0a0a" font-size="12" font-weight="700">The</text>
+          <rect x="200" y="3" width="65" height="28" rx="6" fill="#b0b0b0"/>
+          <text x="232" y="21" text-anchor="middle" fill="#0a0a0a" font-size="12" font-weight="600">cat</text>
+          <rect x="280" y="3" width="65" height="28" rx="6" fill="#787878"/>
+          <text x="312" y="21" text-anchor="middle" fill="#e8e8e8" font-size="12" font-weight="600">sat</text>
+          <rect x="360" y="3" width="65" height="28" rx="6" fill="#505050"/>
+          <text x="392" y="21" text-anchor="middle" fill="#e8e8e8" font-size="12" font-weight="600">on</text>
+
+          <line x1="152" y1="33" x2="232" y2="60" stroke="#505050" stroke-width="1" marker-end="url(#a4)"/>
+          <line x1="232" y1="33" x2="312" y2="60" stroke="#505050" stroke-width="1" marker-end="url(#a4)"/>
+          <line x1="312" y1="33" x2="392" y2="60" stroke="#505050" stroke-width="1" marker-end="url(#a4)"/>
+          <line x1="392" y1="33" x2="472" y2="60" stroke="#505050" stroke-width="1" marker-end="url(#a4)"/>
+          <text x="190" y="50" fill="#505050" font-size="8">predict</text>
+
+          <rect x="200" y="63" width="65" height="28" rx="6" fill="none" stroke="#b0b0b0" stroke-width="1.2"/>
+          <text x="232" y="81" text-anchor="middle" fill="#b0b0b0" font-size="12" font-weight="600">cat</text>
+          <rect x="280" y="63" width="65" height="28" rx="6" fill="none" stroke="#787878" stroke-width="1.2"/>
+          <text x="312" y="81" text-anchor="middle" fill="#787878" font-size="12" font-weight="600">sat</text>
+          <rect x="360" y="63" width="65" height="28" rx="6" fill="none" stroke="#505050" stroke-width="1.2"/>
+          <text x="392" y="81" text-anchor="middle" fill="#505050" font-size="12" font-weight="600">on</text>
+          <rect x="440" y="63" width="65" height="28" rx="6" fill="none" stroke="#333333" stroke-width="1.2"/>
+          <text x="472" y="81" text-anchor="middle" fill="#505050" font-size="12" font-weight="600">the</text>
+
+          <text x="350" y="105" text-anchor="middle" fill="#505050" font-size="9.5">Predict next token at every position simultaneously = efficient training</text>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <div class="quiz">
+    <h4>Check Your Understanding</h4>
+    <p>Why is per_rank_span equal to local_tokens + 1 in DistributedTokenLoader?</p>
+    <button class="quiz-opt" onclick="checkQuiz(this,'wrong','q3')">A. For padding</button>
+    <button class="quiz-opt" onclick="checkQuiz(this,'wrong','q3')">B. To add a BOS token</button>
+    <button class="quiz-opt" onclick="checkQuiz(this,'correct','q3')">C. We need an extra token when shifting to create x and y</button>
+    <button class="quiz-opt" onclick="checkQuiz(this,'wrong','q3')">D. For GPU memory alignment</button>
+    <div class="quiz-explain" id="q3">
+      From N consecutive tokens, we make x = tokens[:-1] and y = tokens[1:], which gives us N-1 input-target pairs.
+      To create local_tokens pairs, we need local_tokens + 1 tokens.
+    </div>
+  </div>
+
+  <button class="next-ch" onclick="go(3)">Chapter 4: Embedding — From Numbers to Meaning &rarr;</button>
+</div>
+<!-- ====== CHAPTER 4 ====== -->
+<div class="chapter" id="ch3">
+  <div class="intro-box">
+    <span class="tag tag-ch">Chapter 4</span>
+    <span class="tag tag-topic">Model</span>
+    <h2>Embedding: From Numbers to Meaning</h2>
+    <p>
+      A token ID is just a simple integer. Token 42 isn't mathematically "larger" than token 43.
+      Embedding transforms these discrete IDs into <strong>continuous high-dimensional vectors</strong>,
+      creating a space where the neural network can learn meaningful relationships.
+    </p>
+  </div>
+
+  <div class="concept" onclick="this.classList.add('open')">
+    <div class="concept-head">
+      <span class="arrow">&#9654;</span>
+      <span class="num">1</span>
+      <h3>What is Embedding: A Lookup Table</h3>
+      <span class="brief">Extracting a row from a matrix</span>
+    </div>
+    <div class="concept-body">
+      <p>
+        Embedding is fundamentally <strong>extracting a row from a large matrix</strong>.
+        If a token ID is 42, the 42nd row of our 1024x512 matrix becomes that token's vector representation.
+      </p>
+      <div class="dia">
+        <svg viewBox="0 0 700 135">
+          <rect x="10" y="42" width="85" height="44" rx="8" fill="#e8e8e8"/>
+          <text x="52" y="62" text-anchor="middle" fill="#0a0a0a" font-size="14" font-weight="700">ID=42</text>
+          <text x="52" y="78" text-anchor="middle" fill="#505050" font-size="8">token ID</text>
+
+          <line x1="100" y1="64" x2="138" y2="64" stroke="#787878" stroke-width="1" marker-end="url(#a1d)"/>
+
+          <rect x="143" y="2" width="240" height="130" rx="10" fill="var(--card)" stroke="#505050" stroke-width="1"/>
+          <text x="263" y="19" text-anchor="middle" fill="#b0b0b0" font-size="10" font-weight="700" letter-spacing=".02em">EMBEDDING MATRIX</text>
+          <text x="158" y="39" fill="#333333" font-size="9">Row 0:  [0.12, -0.34, ...]</text>
+          <text x="158" y="53" fill="#333333" font-size="9">Row 1:  [0.78, 0.23, ...]</text>
+          <text x="158" y="67" fill="#333333" font-size="9">...</text>
+          <rect x="148" y="71" width="230" height="18" rx="3" fill="#e8e8e8"/>
+          <text x="158" y="84" fill="#0a0a0a" font-size="9" font-weight="600">Row 42: [0.45, -0.67, 0.89, ...]</text>
+          <text x="158" y="100" fill="#333333" font-size="9">...</text>
+          <text x="158" y="114" fill="#333333" font-size="9">Row 1023: [-0.22, 0.15, ...]</text>
+
+          <line x1="388" y1="80" x2="425" y2="80" stroke="#787878" stroke-width="1" marker-end="url(#a1d)"/>
+
+          <rect x="430" y="52" width="255" height="44" rx="8" fill="var(--card)" stroke="#505050" stroke-width="1"/>
+          <text x="557" y="72" text-anchor="middle" fill="#e8e8e8" font-size="11" font-weight="600">[0.45, -0.67, 0.89, ..., 0.12]</text>
+          <text x="557" y="89" text-anchor="middle" fill="#505050" font-size="9">512-dimensional vector</text>
+        </svg>
+      </div>
+      <div class="codeblock">
+self.tok_emb = nn.<span class="fn">Embedding</span>(<span class="num">1024</span>, <span class="num">512</span>)
+
+x = self.tok_emb(input_ids)           <span class="cm"># (batch, seq_len) → (batch, seq_len, 512)</span>
+x = F.<span class="aq">rms_norm</span>(x, (x.<span class="aq">size</span>(-<span class="num">1</span>),))  <span class="cm"># normalize</span></div>
+    </div>
+  </div>
+
+  <div class="concept" onclick="this.classList.add('open')">
+    <div class="concept-head">
+      <span class="arrow">&#9654;</span>
+      <span class="num">2</span>
+      <h3>Why 512 Dimensions: Balancing Expressiveness and Size</h3>
+      <span class="brief">Choosing model_dim</span>
+    </div>
+    <div class="concept-body">
+      <p>
+        model_dim=512 means we represent each token using 512 numbers.
+        If we doubled the dimension to 1024, parameters would grow by about 4x, exceeding 16MB.
+      </p>
+      <div class="highlight hl-blue">
+        <strong>Intuition:</strong> 512 dimensions means describing each word across 512 different properties.
+        Think of 512 abstract axes—things like "emotional tone," "formality level," "temporal relevance."
+        The model learns what these axes actually mean.
+      </div>
+    </div>
+  </div>
+
+  <div class="concept" onclick="this.classList.add('open')">
+    <div class="concept-head">
+      <span class="arrow">&#9654;</span>
+      <span class="num">3</span>
+      <h3>After Embedding: The Start of the Residual Stream</h3>
+      <span class="brief">The transformer's information highway</span>
+    </div>
+    <div class="concept-body">
+      <div class="analogy">
+        <p>
+          Think of it like a letter being passed around. Multiple people add sticky notes without modifying the original.
+          Each person contributes their own interpretation or annotation. Our 9 blocks add their "interpretation" one by one,
+          and at the end, all this accumulated information guides the prediction of the next token.
+        </p>
+      </div>
+      <div class="codeblock">
+x = self.tok_emb(input_ids)
+x = F.<span class="aq">rms_norm</span>(x, (x.<span class="aq">size</span>(-<span class="num">1</span>),))
+x0 = x  <span class="cm"># preserve original (referenced in resid_mix)</span>
+
+<span class="kw">for</span> block <span class="kw">in</span> self.blocks:
+    x = block(x, x0)  <span class="cm"># internal residual addition</span>
+
+x = self.<span class="aq">final_norm</span>(x)
+logits = F.<span class="aq">linear</span>(x, self.tok_emb.weight)  <span class="cm"># tied head</span></div>
+    </div>
+  </div>
+
+  <button class="next-ch" onclick="go(4)">Chapter 5: Attention: Understanding Context &rarr;</button>
+</div>
+
+<!-- ====== CHAPTER 5 ====== -->
+<div class="chapter" id="ch4">
+  <div class="intro-box">
+    <span class="tag tag-ch">Chapter 5</span>
+    <span class="tag tag-topic">Core Mechanism</span>
+    <h2>Attention: The Mechanism for Understanding Context</h2>
+    <p>
+      The same word means different things in different contexts. Attention is the mechanism that lets each token
+      <strong>look at its neighbors</strong> and adjust its representation to match the surrounding context.
+    </p>
+  </div>
+
+  <div class="concept" onclick="this.classList.add('open')">
+    <div class="concept-head">
+      <span class="arrow">&#9654;</span>
+      <span class="num">1</span>
+      <h3>Query, Key, Value: A Library Search Analogy</h3>
+      <span class="brief">The three components of attention</span>
+    </div>
+    <div class="concept-body">
+      <div class="analogy">
+        <p>
+          Think of searching a library. A <strong>Query</strong> is the question: "I'm looking for this kind of information."
+          A <strong>Key</strong> is like a catalog card for each book—"I contain this kind of content."
+          <strong>Value</strong> is the actual book content. When the query matches a key well, we take that book's value.
+        </p>
+      </div>
+      <div class="codeblock">
+q = self.<span class="aq">c_q</span>(x)    <span class="cm"># Query: "what am I looking for"</span>
+k = self.<span class="aq">c_k</span>(x)    <span class="cm"># Key: "what do I have"</span>
+v = self.<span class="aq">c_v</span>(x)    <span class="cm"># Value: "my actual information"</span>
+
+<span class="cm"># dot product of Q and K → attention score</span>
+<span class="cm"># higher scores mean we reference that position's V more</span></div>
+    </div>
+  </div>
+
+  <div class="concept" onclick="this.classList.add('open')">
+    <div class="concept-head">
+      <span class="arrow">&#9654;</span>
+      <span class="num">2</span>
+      <h3>Multi-Head & Group Query Attention</h3>
+      <span class="brief">Multiple perspectives, efficiently</span>
+    </div>
+    <div class="concept-body">
+      <p>
+        We split the 512-dimensional vector across 8 heads. Each head independently performs attention in 64-dimensional space.
+        With GQA applied, 8 query heads share 4 key-value heads.
+      </p>
+      <div class="dia">
+        <svg viewBox="0 0 700 100">
+          <text x="10" y="14" fill="#505050" font-size="9" font-weight="500" letter-spacing=".04em">QUERY HEADS (8)</text>
+          <rect x="10" y="20" width="70" height="24" rx="5" fill="#e8e8e8"/>
+          <text x="45" y="36" text-anchor="middle" fill="#0a0a0a" font-size="9" font-weight="600">Q0</text>
+          <rect x="85" y="20" width="70" height="24" rx="5" fill="#b0b0b0"/>
+          <text x="120" y="36" text-anchor="middle" fill="#0a0a0a" font-size="9">Q1</text>
+
+          <rect x="175" y="20" width="70" height="24" rx="5" fill="#e8e8e8"/>
+          <text x="210" y="36" text-anchor="middle" fill="#0a0a0a" font-size="9" font-weight="600">Q2</text>
+          <rect x="250" y="20" width="70" height="24" rx="5" fill="#b0b0b0"/>
+          <text x="285" y="36" text-anchor="middle" fill="#0a0a0a" font-size="9">Q3</text>
+
+          <rect x="340" y="20" width="70" height="24" rx="5" fill="#e8e8e8"/>
+          <text x="375" y="36" text-anchor="middle" fill="#0a0a0a" font-size="9" font-weight="600">Q4</text>
+          <rect x="415" y="20" width="70" height="24" rx="5" fill="#b0b0b0"/>
+          <text x="450" y="36" text-anchor="middle" fill="#0a0a0a" font-size="9">Q5</text>
+
+          <rect x="505" y="20" width="70" height="24" rx="5" fill="#e8e8e8"/>
+          <text x="540" y="36" text-anchor="middle" fill="#0a0a0a" font-size="9" font-weight="600">Q6</text>
+          <rect x="580" y="20" width="70" height="24" rx="5" fill="#b0b0b0"/>
+          <text x="615" y="36" text-anchor="middle" fill="#0a0a0a" font-size="9">Q7</text>
+
+          <line x1="45" y1="46" x2="82" y2="62" stroke="#505050" stroke-width=".7"/>
+          <line x1="120" y1="46" x2="82" y2="62" stroke="#505050" stroke-width=".7"/>
+          <line x1="210" y1="46" x2="247" y2="62" stroke="#505050" stroke-width=".7"/>
+          <line x1="285" y1="46" x2="247" y2="62" stroke="#505050" stroke-width=".7"/>
+          <line x1="375" y1="46" x2="412" y2="62" stroke="#505050" stroke-width=".7"/>
+          <line x1="450" y1="46" x2="412" y2="62" stroke="#505050" stroke-width=".7"/>
+          <line x1="540" y1="46" x2="577" y2="62" stroke="#505050" stroke-width=".7"/>
+          <line x1="615" y1="46" x2="577" y2="62" stroke="#505050" stroke-width=".7"/>
+
+          <text x="10" y="76" fill="#505050" font-size="9" font-weight="500" letter-spacing=".04em">KV HEADS (4)</text>
+          <rect x="10" y="80" width="145" height="18" rx="4" fill="none" stroke="#505050" stroke-width="1"/>
+          <text x="82" y="93" text-anchor="middle" fill="#787878" font-size="9">KV Head 0</text>
+          <rect x="175" y="80" width="145" height="18" rx="4" fill="none" stroke="#505050" stroke-width="1"/>
+          <text x="247" y="93" text-anchor="middle" fill="#787878" font-size="9">KV Head 1</text>
+          <rect x="340" y="80" width="145" height="18" rx="4" fill="none" stroke="#505050" stroke-width="1"/>
+          <text x="412" y="93" text-anchor="middle" fill="#787878" font-size="9">KV Head 2</text>
+          <rect x="505" y="80" width="145" height="18" rx="4" fill="none" stroke="#505050" stroke-width="1"/>
+          <text x="577" y="93" text-anchor="middle" fill="#787878" font-size="9">KV Head 3</text>
+        </svg>
+      </div>
+      <p>
+        The KV projection shrinks from 512 to 256 output dimensions, cutting parameters in half while barely hurting performance.
+      </p>
+    </div>
+  </div>
+
+  <div class="concept" onclick="this.classList.add('open')">
+    <div class="concept-head">
+      <span class="arrow">&#9654;</span>
+      <span class="num">3</span>
+      <h3>RoPE: Injecting Position Information</h3>
+      <span class="brief">Telling the model where things are</span>
+    </div>
+    <div class="concept-body">
+      <p>
+        Attention by itself doesn't know token order. RoPE (Rotary Position Embedding)
+        rotates Q and K vectors at different angles based on position, encoding relative distance into attention scores.
+      </p>
+      <div class="codeblock">
+<span class="kw">def</span> <span class="fn">apply_rotary_emb</span>(x, cos, sin):
+    half = x.<span class="aq">size</span>(-<span class="num">1</span>) // <span class="num">2</span>
+    x1, x2 = x[..., :half], x[..., half:]
+    <span class="kw">return</span> torch.<span class="aq">cat</span>(
+        (x1 <span class="op">*</span> cos <span class="op">+</span> x2 <span class="op">*</span> sin,
+         x1 <span class="op">*</span> (<span class="op">-</span>sin) <span class="op">+</span> x2 <span class="op">*</span> cos), dim=<span class="op">-</span><span class="num">1</span>)</div>
+    </div>
+  </div>
+
+  <div class="concept" onclick="this.classList.add('open')">
+    <div class="concept-head">
+      <span class="arrow">&#9654;</span>
+      <span class="num">4</span>
+      <h3>Causal Mask: Preventing Peeking at the Future</h3>
+      <span class="brief">The core constraint of autoregressive generation</span>
+    </div>
+    <div class="concept-body">
+      <p>
+        Language models generate left to right.
+        A causal mask restricts each token to attend only to itself and prior tokens.
+      </p>
+      <div class="dia">
+        <svg viewBox="0 0 700 150">
+          <text x="235" y="16" text-anchor="middle" fill="#e8e8e8" font-size="11" font-weight="700">Attention Score Matrix</text>
+          <text x="168" y="36" text-anchor="middle" fill="#505050" font-size="9">The</text>
+          <text x="218" y="36" text-anchor="middle" fill="#505050" font-size="9">cat</text>
+          <text x="268" y="36" text-anchor="middle" fill="#505050" font-size="9">sat</text>
+          <text x="318" y="36" text-anchor="middle" fill="#505050" font-size="9">on</text>
+
+          <text x="133" y="57" text-anchor="end" fill="#505050" font-size="9">The</text>
+          <rect x="145" y="42" width="45" height="22" rx="4" fill="#e8e8e8"/>
+          <text x="168" y="57" text-anchor="middle" fill="#0a0a0a" font-size="9">.8</text>
+          <rect x="195" y="42" width="45" height="22" rx="4" fill="#1a1a1a" stroke="#222" stroke-width=".5"/>
+          <text x="218" y="57" text-anchor="middle" fill="#333" font-size="9">&mdash;</text>
+          <rect x="245" y="42" width="45" height="22" rx="4" fill="#1a1a1a" stroke="#222" stroke-width=".5"/>
+          <text x="268" y="57" text-anchor="middle" fill="#333" font-size="9">&mdash;</text>
+          <rect x="295" y="42" width="45" height="22" rx="4" fill="#1a1a1a" stroke="#222" stroke-width=".5"/>
+          <text x="318" y="57" text-anchor="middle" fill="#333" font-size="9">&mdash;</text>
+
+          <text x="133" y="81" text-anchor="end" fill="#505050" font-size="9">cat</text>
+          <rect x="145" y="68" width="45" height="22" rx="4" fill="#787878"/>
+          <text x="168" y="83" text-anchor="middle" fill="#e8e8e8" font-size="9">.3</text>
+          <rect x="195" y="68" width="45" height="22" rx="4" fill="#e8e8e8"/>
+          <text x="218" y="83" text-anchor="middle" fill="#0a0a0a" font-size="9">.7</text>
+          <rect x="245" y="68" width="45" height="22" rx="4" fill="#1a1a1a" stroke="#222" stroke-width=".5"/>
+          <text x="268" y="83" text-anchor="middle" fill="#333" font-size="9">&mdash;</text>
+          <rect x="295" y="68" width="45" height="22" rx="4" fill="#1a1a1a" stroke="#222" stroke-width=".5"/>
+          <text x="318" y="83" text-anchor="middle" fill="#333" font-size="9">&mdash;</text>
+
+          <text x="133" y="107" text-anchor="end" fill="#505050" font-size="9">sat</text>
+          <rect x="145" y="94" width="45" height="22" rx="4" fill="#505050"/>
+          <text x="168" y="109" text-anchor="middle" fill="#e8e8e8" font-size="9">.1</text>
+          <rect x="195" y="94" width="45" height="22" rx="4" fill="#787878"/>
+          <text x="218" y="109" text-anchor="middle" fill="#e8e8e8" font-size="9">.5</text>
+          <rect x="245" y="94" width="45" height="22" rx="4" fill="#b0b0b0"/>
+          <text x="268" y="109" text-anchor="middle" fill="#0a0a0a" font-size="9">.4</text>
+          <rect x="295" y="94" width="45" height="22" rx="4" fill="#1a1a1a" stroke="#222" stroke-width=".5"/>
+          <text x="318" y="109" text-anchor="middle" fill="#333" font-size="9">&mdash;</text>
+
+          <text x="133" y="133" text-anchor="end" fill="#505050" font-size="9">on</text>
+          <rect x="145" y="120" width="45" height="22" rx="4" fill="#505050"/>
+          <text x="168" y="135" text-anchor="middle" fill="#e8e8e8" font-size="9">.1</text>
+          <rect x="195" y="120" width="45" height="22" rx="4" fill="#505050"/>
+          <text x="218" y="135" text-anchor="middle" fill="#e8e8e8" font-size="9">.2</text>
+          <rect x="245" y="120" width="45" height="22" rx="4" fill="#787878"/>
+          <text x="268" y="135" text-anchor="middle" fill="#e8e8e8" font-size="9">.3</text>
+          <rect x="295" y="120" width="45" height="22" rx="4" fill="#e8e8e8"/>
+          <text x="318" y="135" text-anchor="middle" fill="#0a0a0a" font-size="9">.4</text>
+
+          <!-- Legend -->
+          <rect x="410" y="50" width="14" height="14" rx="3" fill="#b0b0b0"/>
+          <text x="432" y="61" fill="#b0b0b0" font-size="9">can attend (brighter = higher)</text>
+          <rect x="410" y="72" width="14" height="14" rx="3" fill="#1a1a1a" stroke="#222" stroke-width=".5"/>
+          <text x="432" y="83" fill="#505050" font-size="9">masked (future token)</text>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <div class="quiz">
+    <h4>Check Your Understanding</h4>
+    <p>In GQA with 8 query heads and 4 KV heads, what's the parameter reduction in KV projection?</p>
+    <button class="quiz-opt" onclick="checkQuiz(this,'wrong','q4')">A. 25% reduction</button>
+    <button class="quiz-opt" onclick="checkQuiz(this,'correct','q4')">B. 50% reduction</button>
+    <button class="quiz-opt" onclick="checkQuiz(this,'wrong','q4')">C. 75% reduction</button>
+    <button class="quiz-opt" onclick="checkQuiz(this,'wrong','q4')">D. No reduction</button>
+    <div class="quiz-explain" id="q4">
+      In standard multi-head attention, K and V projections each produce dim=512 outputs. With GQA using 4 KV heads,
+      the output becomes 4*64=256. That's a reduction from 512 to 256, which is 50%.
+    </div>
+  </div>
+
+  <button class="next-ch" onclick="go(5)">Chapter 6: Complete Transformer Block &rarr;</button>
+</div>
+
+<!-- ====== CHAPTER 6 ====== -->
+<div class="chapter" id="ch5">
+  <div class="intro-box">
+    <span class="tag tag-ch">Chapter 6</span>
+    <span class="tag tag-topic">Architecture</span>
+    <h2>The Complete Transformer Block: Putting It All Together</h2>
+    <p>
+      Let's see how everything we've learned fits together inside a single block.
+      Our project's block design differs slightly from the standard transformer,
+      and we'll understand the reasoning behind each choice.
+    </p>
+  </div>
+
+  <div class="concept" onclick="this.classList.add('open')">
+    <div class="concept-head">
+      <span class="arrow">&#9654;</span>
+      <span class="num">1</span>
+      <h3>Block Structure: The Complete Flow</h3>
+      <span class="brief">Norm → Attn → Norm → MLP</span>
+    </div>
+    <div class="concept-body">
+      <div class="codeblock">
+<span class="kw">class</span> <span class="fn">Block</span>(nn.Module):
+    <span class="kw">def</span> <span class="fn">forward</span>(self, x, x0):
+        <span class="cm"># 1. Residual mixing</span>
+        mix = self.resid_mix
+        x = mix[<span class="num">0</span>] <span class="op">*</span> x <span class="op">+</span> mix[<span class="num">1</span>] <span class="op">*</span> x0
+
+        <span class="cm"># 2. Attention sub-block</span>
+        n = self.<span class="aq">attn_norm</span>(x)
+        attn_out = self.<span class="aq">attn</span>(n)
+        x = x <span class="op">+</span> self.attn_scale <span class="op">*</span> attn_out
+
+        <span class="cm"># 3. MLP sub-block</span>
+        mlp_out = self.<span class="aq">mlp</span>(self.<span class="aq">mlp_norm</span>(x))
+        x = x <span class="op">+</span> self.mlp_scale <span class="op">*</span> mlp_out
+
+        <span class="kw">return</span> x</div>
+      <div class="dia">
+        <svg viewBox="0 0 700 255">
+          <defs><marker id="a6" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><polygon points="0 0,7 2.5,0 5" fill="#787878"/></marker></defs>
+
+          <rect x="220" y="5" width="260" height="28" rx="6" fill="var(--card)" stroke="#505050" stroke-width="1"/>
+          <text x="350" y="23" text-anchor="middle" fill="#b0b0b0" font-size="10" font-weight="500">x (residual stream) + x0 (original)</text>
+          <line x1="350" y1="35" x2="350" y2="50" stroke="#787878" stroke-width="1" marker-end="url(#a6)"/>
+
+          <rect x="280" y="53" width="140" height="22" rx="5" fill="var(--ac-purple-bg)" stroke="var(--ac-purple-dim)" stroke-width=".8"/>
+          <text x="350" y="68" text-anchor="middle" fill="var(--ac-purple)" font-size="9" font-weight="500">resid_mix: blend x, x0</text>
+          <line x1="350" y1="77" x2="350" y2="92" stroke="#787878" stroke-width="1" marker-end="url(#a6)"/>
+
+          <rect x="200" y="95" width="300" height="48" rx="8" fill="#e8e8e8"/>
+          <text x="350" y="114" text-anchor="middle" fill="#0a0a0a" font-size="11" font-weight="700">RMSNorm → CausalSelfAttention</text>
+          <text x="350" y="132" text-anchor="middle" fill="#505050" font-size="9">GQA + RoPE + Q/K Norm + q_gain</text>
+
+          <rect x="530" y="102" width="85" height="18" rx="4" fill="var(--ac-red-bg)" stroke="var(--ac-red-dim)" stroke-width=".8"/>
+          <text x="572" y="115" text-anchor="middle" fill="var(--ac-red)" font-size="8">× attn_scale</text>
+
+          <text x="350" y="160" text-anchor="middle" fill="#505050" font-size="9">+ residual</text>
+          <line x1="350" y1="166" x2="350" y2="180" stroke="#787878" stroke-width="1" marker-end="url(#a6)"/>
+
+          <rect x="200" y="183" width="300" height="48" rx="8" fill="#787878"/>
+          <text x="350" y="203" text-anchor="middle" fill="#e8e8e8" font-size="11" font-weight="600">RMSNorm → MLP (ReLU-squared)</text>
+          <text x="350" y="221" text-anchor="middle" fill="#b0b0b0" font-size="9">512 → 1024 → relu(x)^2 → 512</text>
+
+          <rect x="530" y="190" width="85" height="18" rx="4" fill="var(--ac-blue-bg)" stroke="var(--ac-blue-dim)" stroke-width=".8"/>
+          <text x="572" y="203" text-anchor="middle" fill="var(--ac-blue)" font-size="8">× mlp_scale</text>
+
+          <text x="350" y="248" text-anchor="middle" fill="#505050" font-size="9">+ residual</text>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <div class="concept" onclick="this.classList.add('open')">
+    <div class="concept-head">
+      <span class="arrow">&#9654;</span>
+      <span class="num">2</span>
+      <h3>RMSNorm & MLP: ReLU-Squared</h3>
+      <span class="brief">Stabilization and nonlinear transformation</span>
+    </div>
+    <div class="concept-body">
+      <p>
+        <strong>RMSNorm</strong> normalizes by dividing by the RMS, keeping vector magnitudes consistent.
+        <strong>MLP</strong>'s <code>relu(x)^2</code> creates sparse activations,
+        letting the model learn diverse patterns with fewer parameters.
+      </p>
+    </div>
+  </div>
+
+  <div class="concept" onclick="this.classList.add('open')">
+    <div class="concept-head">
+      <span class="arrow">&#9654;</span>
+      <span class="num">3</span>
+      <h3>Learnable Scale & Mix Parameters</h3>
+      <span class="brief">Dials the model controls itself</span>
+    </div>
+    <div class="concept-body">
+      <table class="tbl">
+        <tr><th>Parameter</th><th>Shape</th><th>Role</th><th>Initial Value</th></tr>
+        <tr><td><code>attn_scale</code></td><td>(512,)</td><td>Per-channel magnitude of attention output</td><td>1.0</td></tr>
+        <tr><td><code>mlp_scale</code></td><td>(512,)</td><td>Per-channel magnitude of MLP output</td><td>1.0</td></tr>
+        <tr><td><code>resid_mix</code></td><td>(2, 512)</td><td>Blending ratio between current x and original x0</td><td>[1, 0]</td></tr>
+        <tr><td><code>q_gain</code></td><td>(8,)</td><td>Per-head scaling for queries</td><td>1.5</td></tr>
+        <tr><td><code>skip_weight</code></td><td>(4, 512)</td><td>U-Net skip connection weights</td><td>1.0</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="concept" onclick="this.classList.add('open')">
+    <div class="concept-head">
+      <span class="arrow">&#9654;</span>
+      <span class="num">4</span>
+      <h3>U-Net Skip Connection</h3>
+      <span class="brief">Encoder-decoder structure</span>
+    </div>
+    <div class="concept-body">
+      <div class="dia">
+        <svg viewBox="0 0 700 125">
+          <text x="350" y="14" text-anchor="middle" fill="#e8e8e8" font-size="10" font-weight="700" letter-spacing=".03em">9 LAYERS = 4 ENCODER + 5 DECODER</text>
+          <rect x="30" y="26" width="60" height="28" rx="6" fill="#e8e8e8"/>
+          <text x="60" y="44" text-anchor="middle" fill="#0a0a0a" font-size="9" font-weight="600">E0</text>
+          <rect x="105" y="26" width="60" height="28" rx="6" fill="#b0b0b0"/>
+          <text x="135" y="44" text-anchor="middle" fill="#0a0a0a" font-size="9">E1</text>
+          <rect x="180" y="26" width="60" height="28" rx="6" fill="#787878"/>
+          <text x="210" y="44" text-anchor="middle" fill="#e8e8e8" font-size="9">E2</text>
+          <rect x="255" y="26" width="60" height="28" rx="6" fill="#505050"/>
+          <text x="285" y="44" text-anchor="middle" fill="#e8e8e8" font-size="9">E3</text>
+
+          <line x1="92" y1="40" x2="103" y2="40" stroke="#505050" stroke-width=".8"/>
+          <line x1="167" y1="40" x2="178" y2="40" stroke="#505050" stroke-width=".8"/>
+          <line x1="242" y1="40" x2="253" y2="40" stroke="#505050" stroke-width=".8"/>
+          <line x1="317" y1="40" x2="360" y2="40" stroke="#505050" stroke-width=".8"/>
+
+          <rect x="362" y="26" width="60" height="28" rx="6" fill="none" stroke="#505050" stroke-width="1.2"/>
+          <text x="392" y="44" text-anchor="middle" fill="#787878" font-size="9">D0</text>
+          <rect x="437" y="26" width="60" height="28" rx="6" fill="none" stroke="#787878" stroke-width="1.2"/>
+          <text x="467" y="44" text-anchor="middle" fill="#787878" font-size="9">D1</text>
+          <rect x="512" y="26" width="60" height="28" rx="6" fill="none" stroke="#b0b0b0" stroke-width="1.2"/>
+          <text x="542" y="44" text-anchor="middle" fill="#b0b0b0" font-size="9">D2</text>
+          <rect x="587" y="26" width="60" height="28" rx="6" fill="none" stroke="#e8e8e8" stroke-width="1.2"/>
+          <text x="617" y="44" text-anchor="middle" fill="#e8e8e8" font-size="9">D3</text>
+
+          <line x1="424" y1="40" x2="435" y2="40" stroke="#505050" stroke-width=".8"/>
+          <line x1="499" y1="40" x2="510" y2="40" stroke="#505050" stroke-width=".8"/>
+          <line x1="574" y1="40" x2="585" y2="40" stroke="#505050" stroke-width=".8"/>
+
+          <path d="M285,56 C285,90 392,90 392,56" stroke="var(--ac-purple-dim)" stroke-width="1" fill="none" stroke-dasharray="4,3"/>
+          <path d="M210,56 C210,102 467,102 467,56" stroke="var(--ac-red-dim)" stroke-width="1" fill="none" stroke-dasharray="4,3"/>
+          <path d="M135,56 C135,112 542,112 542,56" stroke="var(--ac-blue-dim)" stroke-width="1" fill="none" stroke-dasharray="4,3"/>
+          <path d="M60,56 C60,122 617,122 617,56" stroke="#505050" stroke-width="1" fill="none" stroke-dasharray="4,3"/>
+          <text x="350" y="82" text-anchor="middle" fill="#505050" font-size="8">skip * weight</text>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <div class="concept" onclick="this.classList.add('open')">
+    <div class="concept-head">
+      <span class="arrow">&#9654;</span>
+      <span class="num">5</span>
+      <h3>Final Output: Logits and Cross-Entropy Loss</h3>
+      <span class="brief">From prediction to learning signal</span>
+    </div>
+    <div class="concept-body">
+      <div class="codeblock">
+x = self.<span class="aq">final_norm</span>(x)
+logits = F.<span class="aq">linear</span>(x, self.tok_emb.weight)
+logits = <span class="num">30.0</span> <span class="op">*</span> torch.<span class="aq">tanh</span>(logits / <span class="num">30.0</span>)  <span class="cm"># softcap</span>
+
+loss = F.<span class="aq">cross_entropy</span>(
+    logits.<span class="aq">float</span>().<span class="aq">reshape</span>(<span class="op">-</span><span class="num">1</span>, <span class="num">1024</span>),
+    target_ids.<span class="aq">reshape</span>(<span class="op">-</span><span class="num">1</span>),
+    reduction=<span class="str">"mean"</span>)</div>
+      <p>
+        Cross-entropy loss measures how different the model's predicted probability distribution is from the target.
+        Training is the process of adjusting all parameters to reduce this loss.
+      </p>
+    </div>
+  </div>
+
+  <div class="quiz">
+    <h4>Final Check</h4>
+    <p>Which correctly describes the complete data flow through this model?</p>
+    <button class="quiz-opt" onclick="checkQuiz(this,'wrong','q5')">A. Text → Attention → Embedding → MLP → Loss</button>
+    <button class="quiz-opt" onclick="checkQuiz(this,'correct','q5')">B. Token IDs → Embedding → [Norm → Attn + Norm → MLP] x9 → Norm → LM Head → Loss</button>
+    <button class="quiz-opt" onclick="checkQuiz(this,'wrong','q5')">C. Embedding → MLP → Attention → Norm → Loss</button>
+    <button class="quiz-opt" onclick="checkQuiz(this,'wrong','q5')">D. Text → BPE → Attention → Loss</button>
+    <div class="quiz-explain" id="q5">
+      Token IDs are embedded into vectors, then pass through 9 transformer blocks. Each block applies RMSNorm, attention,
+      RMSNorm, and MLP. At the end, a final RMSNorm and tied LM head produce logits, and cross-entropy computes the loss against targets.
+    </div>
+  </div>
+
+  <div class="highlight hl-purple" style="margin-top:32px">
+    <strong>Summary so far:</strong> Text is tokenized to integer IDs by a BPE tokenizer and stored in binary shards.
+    During training, TokenStream reads them sequentially and distributes across GPUs. Each token ID becomes a 512-dim vector via embedding,
+    passes through 9 transformer blocks where attention understands context and MLP processes information.
+    Finally, we predict the next token's probability and compute a cross-entropy loss signal.
+    This repeats 20,000 times, gradually teaching the model to make better predictions.
+  </div>
+
+  <button class="next-ch" onclick="go(6)">Chapter 7: Multi-Optimizer Strategy &rarr;</button>
+</div>
+<!-- ====== CHAPTER 7 ====== -->
+<div class="chapter" id="ch6">
+  <div class="intro-box">
+    <span class="tag tag-ch">Chapter 7</span>
+    <span class="tag tag-topic">Optimization</span>
+    <h2>Multi-Optimizer Strategy: Muon and Adam</h2>
+    <p>
+      In typical training, a single optimizer updates all parameters. We use a different strategy here: <strong>different optimizers for different parameter types</strong>. We'll look at why and how we use Muon for 2D matrices and Adam for embeddings and scalars.
+    </p>
+  </div>
+
+  <div class="concept" onclick="this.classList.add('open')">
+    <div class="concept-head">
+      <span class="arrow">&#9654;</span>
+      <span class="num">1</span>
+      <h3>Why split optimizers?</h3>
+      <span class="brief">Parameter type differences</span>
+    </div>
+    <div class="concept-body">
+      <p>
+        Model parameters fall into three categories. <strong>2D matrices</strong> are large tensors like (input_dim, output_dim) used in attention Q/K/V projections or MLP linear layers. <strong>Embeddings</strong> are lookup tables that map token IDs to vectors. <strong>Scalars and vectors</strong> are low-dimensional control parameters like attn_scale, mlp_scale, and resid_mix.
+      </p>
+      <p>
+        Since each type has different characteristics, using a single optimizer for all of them doesn't work well—the learning rate and momentum end up compromising one type or the other. We set separate optimizers and learning rates for each parameter type.
+      </p>
+      <table class="tbl">
+        <tr><th>Parameter Type</th><th>Optimizer</th><th>Learning Rate</th></tr>
+        <tr><td>2D matrix</td><td><strong style="color:var(--white)">Muon</strong></td><td>0.04</td></tr>
+        <tr><td>Token embedding</td><td>Adam</td><td>0.05 (tied)</td></tr>
+        <tr><td>LM head (untied)</td><td>Adam</td><td>0.008</td></tr>
+        <tr><td>Scalar / vector</td><td>Adam</td><td>0.04</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="concept" onclick="this.classList.add('open')">
+    <div class="concept-head">
+      <span class="arrow">&#9654;</span>
+      <span class="num">2</span>
+      <h3>Adam: The Standard Adaptive Learning Rate</h3>
+      <span class="brief">First moment + second moment</span>
+    </div>
+    <div class="concept-body">
+      <p>
+        Adam tracks the first moment (mean) and second moment (variance) of the gradient, adjusting the learning rate adaptively for each parameter. If the gradient consistently points in the same direction, we take a large step. If it's noisy, we take a small one.
+      </p>
+      <p>
+        In this project, Adam handles embeddings, scalars, and vectors. These parameters are either low-dimensional or have specialized roles, so Adam's adaptive nature fits them well.
+      </p>
+      <div class="codeblock">
+optimizer_tok = torch.optim.<span class="fn">Adam</span>(
+    [{<span class="str">"params"</span>: [base_model.tok_emb.weight],
+      <span class="str">"lr"</span>: token_lr, <span class="str">"base_lr"</span>: token_lr}],
+    betas=(<span class="num">0.9</span>, <span class="num">0.95</span>), eps=<span class="num">1e-8</span>, fused=<span class="kw">True</span>)
+
+optimizer_scalar = torch.optim.<span class="fn">Adam</span>(
+    [{<span class="str">"params"</span>: scalar_params,
+      <span class="str">"lr"</span>: <span class="num">0.04</span>, <span class="str">"base_lr"</span>: <span class="num">0.04</span>}],
+    betas=(<span class="num">0.9</span>, <span class="num">0.95</span>), eps=<span class="num">1e-8</span>, fused=<span class="kw">True</span>)</div>
+    </div>
+  </div>
+
+  <div class="concept" onclick="this.classList.add('open')">
+    <div class="concept-head">
+      <span class="arrow">&#9654;</span>
+      <span class="num">3</span>
+      <h3>Muon: Optimizer for Matrices</h3>
+      <span class="brief">Newton-Schulz orthogonalization</span>
+    </div>
+    <div class="concept-body">
+      <p>
+        Muon is an optimizer designed exclusively for 2D matrix parameters. The core idea is to convert the gradient into an <strong>orthogonal matrix</strong> before applying it. An orthogonal matrix has all singular values equal to 1, so it preserves the direction of the update while making the magnitude uniform across all dimensions.
+      </p>
+      <div class="analogy">
+        <p>
+          While a typical optimizer says "move this far in that direction," Muon says "move in that direction, but take the same size step in every dimension." This prevents disproportionately large updates along certain directions.
+        </p>
+      </div>
+      <div class="codeblock">
+<span class="kw">def</span> <span class="fn">zeropower_via_newtonschulz5</span>(G, steps=<span class="num">10</span>, eps=<span class="num">1e-7</span>):
+    <span class="cm"># Orthogonalize the matrix via Newton-Schulz iteration</span>
+    a, b, c = (<span class="num">3.4445</span>, <span class="num">-4.7750</span>, <span class="num">2.0315</span>)
+    X = G.<span class="aq">bfloat16</span>()
+    X /= X.<span class="aq">norm</span>() + eps
+    <span class="kw">for</span> _ <span class="kw">in</span> <span class="bi">range</span>(steps):
+        A = X @ X.T
+        B = b <span class="op">*</span> A + c <span class="op">*</span> A @ A
+        X = a <span class="op">*</span> X + B @ X
+    <span class="kw">return</span> X</div>
+      <p>
+        Newton-Schulz iteration is a fast way to orthogonalize a matrix without computing the full SVD. Five iterations give us a good approximation, making it much more efficient than SVD.
+      </p>
+    </div>
+  </div>
+
+  <div class="concept" onclick="this.classList.add('open')">
+    <div class="concept-head">
+      <span class="arrow">&#9654;</span>
+      <span class="num">4</span>
+      <h3>Muon's Distributed Computation and Momentum</h3>
+      <span class="brief">Work distribution across GPUs</span>
+    </div>
+    <div class="concept-body">
+      <p>
+        Newton-Schulz orthogonalization has computational cost. Muon spreads this across multiple GPUs. Each GPU orthogonalizes its own slice of parameters, then we combine the results with <code>all_reduce</code>.
+      </p>
+      <div class="codeblock">
+<span class="cm"># Each GPU processes only its assigned parameters</span>
+<span class="kw">for</span> i, p <span class="kw">in</span> <span class="bi">enumerate</span>(params):
+    <span class="kw">if</span> i % world_size == rank <span class="kw">and</span> p.grad <span class="kw">is not</span> <span class="kw">None</span>:
+        buf.<span class="aq">mul_</span>(momentum).<span class="aq">add_</span>(g)          <span class="cm"># apply momentum</span>
+        g = g.<span class="aq">add</span>(buf, alpha=momentum)        <span class="cm"># Nesterov</span>
+        g = <span class="fn">zeropower_via_newtonschulz5</span>(g)   <span class="cm"># orthogonalize</span>
+        g <span class="op">*</span>= <span class="bi">max</span>(<span class="num">1</span>, g.<span class="aq">size</span>(<span class="num">0</span>) / g.<span class="aq">size</span>(<span class="num">1</span>)) <span class="op">**</span> <span class="num">0.5</span>
+
+<span class="cm"># Sum results across all GPUs</span>
+dist.<span class="aq">all_reduce</span>(updates_flat, op=dist.ReduceOp.SUM)</div>
+      <p>
+        Momentum also starts at 0.85 and gradually increases to 0.95 over 500 steps. Too much momentum early on destabilizes training, so we warm it up.
+      </p>
+    </div>
+  </div>
+
+  <div class="quiz">
+    <h4>Check Your Understanding</h4>
+    <p>What is the role of Newton-Schulz orthogonalization in the Muon optimizer?</p>
+    <button class="quiz-opt" onclick="checkQuiz(this,'wrong','q6')">A. It sets the gradient magnitude to zero, stabilizing training</button>
+    <button class="quiz-opt" onclick="checkQuiz(this,'correct','q6')">B. It makes all singular values of the gradient matrix equal to 1, making the update magnitude uniform across dimensions</button>
+    <button class="quiz-opt" onclick="checkQuiz(this,'wrong','q6')">C. It converts the gradient to an inverse matrix, speeding up convergence</button>
+    <button class="quiz-opt" onclick="checkQuiz(this,'wrong','q6')">D. It transforms the gradient into a diagonal matrix, reducing computation</button>
+    <div class="quiz-explain" id="q6">
+      Newton-Schulz iteration performs "zeropower" to make all singular values equal to 1. This preserves the direction of the gradient while normalizing the magnitude, preventing excessive updates in any single direction.
+    </div>
+  </div>
+
+  <button class="next-ch" onclick="go(7)">Chapter 8: Training Loop &rarr;</button>
+</div>
+
+<!-- ====== CHAPTER 8 ====== -->
+<div class="chapter" id="ch7">
+  <div class="intro-box">
+    <span class="tag tag-ch">Chapter 8</span>
+    <span class="tag tag-topic">Training</span>
+    <h2>Training Loop: 20,000 Iterations</h2>
+    <p>
+      With the model architecture and optimizer ready, let's see how training actually happens. We'll walk through gradient accumulation, learning rate scheduling, distributed training, and wallclock limits—the core elements of this project's training loop.
+    </p>
+  </div>
+
+  <div class="concept" onclick="this.classList.add('open')">
+    <div class="concept-head">
+      <span class="arrow">&#9654;</span>
+      <span class="num">1</span>
+      <h3>Gradient Accumulation: Large Batches on Small GPUs</h3>
+      <span class="brief">Summing micro-steps</span>
+    </div>
+    <div class="concept-body">
+      <p>
+        We process 524,288 tokens per step. But we can't fit all of that on a single GPU at once, so we break it into several <strong>micro-steps</strong>. Each micro-step computes gradients on a small batch and accumulates them. Once all micro-steps finish, we update parameters once.
+      </p>
+      <div class="codeblock">
+grad_accum_steps = <span class="num">8</span> // world_size  <span class="cm"># Adjust based on number of GPUs</span>
+grad_scale = <span class="num">1.0</span> / grad_accum_steps
+
+<span class="kw">for</span> micro_step <span class="kw">in</span> <span class="bi">range</span>(grad_accum_steps):
+    x, y = train_loader.<span class="aq">next_batch</span>(...)
+    <span class="kw">with</span> torch.<span class="aq">autocast</span>(dtype=torch.bfloat16):
+        loss = model(x, y)
+    (loss <span class="op">*</span> grad_scale).<span class="aq">backward</span>()   <span class="cm"># accumulate gradients</span>
+
+<span class="kw">for</span> opt <span class="kw">in</span> optimizers:
+    opt.<span class="aq">step</span>()                        <span class="cm"># update once</span></div>
+      <div class="analogy">
+        <p>
+          It's like studying a textbook chapter—instead of reading the whole thing at once and then taking notes, you read section by section, collecting notes as you go, then consolidate all your notes once the chapter is done.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <div class="concept" onclick="this.classList.add('open')">
+    <div class="concept-head">
+      <span class="arrow">&#9654;</span>
+      <span class="num">2</span>
+      <h3>Warmup and Warmdown: Learning Rate Scheduling</h3>
+      <span class="brief">Smooth start and finish</span>
+    </div>
+    <div class="concept-body">
+      <p>
+        Early in training, parameters are random, so applying a large learning rate immediately can be unstable. We do <strong>warmup</strong> for 20 steps to prepare the compiled forward/backward paths, and in the final 1,200 steps we <strong>warmdown</strong>, gradually reducing the learning rate to zero.
+      </p>
+      <div class="codeblock">
+<span class="kw">def</span> <span class="fn">lr_mul</span>(step, elapsed_ms):
+    <span class="cm"># Warmdown: gradually reduce lr based on remaining time</span>
+    remaining_ms = max_wallclock_ms <span class="op">-</span> elapsed_ms
+    warmdown_ms = warmdown_iters <span class="op">*</span> step_ms
+    <span class="kw">if</span> remaining_ms <= warmdown_ms:
+        <span class="kw">return</span> remaining_ms / warmdown_ms
+    <span class="kw">return</span> <span class="num">1.0</span></div>
+      <div class="highlight hl-blue">
+        <strong>Time-based warmdown:</strong> Our warmdown isn't based on step count—it's based on remaining wallclock time. We train as much as we can within the 10-minute limit, but naturally converge as we approach the deadline.
+      </div>
+    </div>
+  </div>
+
+  <div class="concept" onclick="this.classList.add('open')">
+    <div class="concept-head">
+      <span class="arrow">&#9654;</span>
+      <span class="num">3</span>
+      <h3>Distributed Training and DDP</h3>
+      <span class="brief">Syncing across multiple GPUs</span>
+    </div>
+    <div class="concept-body">
+      <p>
+        When using multiple GPUs, PyTorch's <strong>DistributedDataParallel (DDP)</strong> handles gradient synchronization. Each GPU does forward/backward on its own data, and we only synchronize gradients on the last micro-step of backward.
+      </p>
+      <div class="codeblock">
+<span class="cm"># Sync gradients only on the last micro-step</span>
+model.require_backward_grad_sync = (
+    micro_step == grad_accum_steps <span class="op">-</span> <span class="num">1</span>)</div>
+      <p>
+        This cuts down unnecessary communication between micro-steps, speeding up training. With only a 10-minute wallclock limit, reducing communication overhead is critical.
+      </p>
+    </div>
+  </div>
+
+  <div class="concept" onclick="this.classList.add('open')">
+    <div class="concept-head">
+      <span class="arrow">&#9654;</span>
+      <span class="num">4</span>
+      <h3>Wallclock Limits and Early Stopping</h3>
+      <span class="brief">Finishing in 10 minutes</span>
+    </div>
+    <div class="concept-body">
+      <p>
+        The config allows up to 20,000 iterations, but in practice we hit a <strong>600-second (10-minute) wallclock limit</strong> first. Once we reach the time limit, we stop training and run final validation.
+      </p>
+      <div class="codeblock">
+reached_cap = approx_training_time_ms >= max_wallclock_ms
+<span class="kw">if</span> distributed:
+    <span class="cm"># All GPUs must agree to stop</span>
+    dist.<span class="aq">all_reduce</span>(reached_cap_tensor, op=dist.ReduceOp.MAX)
+<span class="kw">if</span> reached_cap:
+    stop_after_step = step  <span class="cm"># Stop after this step</span></div>
+      <p>
+        In distributed settings, if any GPU reaches the time limit, all of them stop. We use <code>all_reduce</code> with MAX to have all GPUs follow the fastest one's decision.
+      </p>
+    </div>
+  </div>
+
+  <div class="quiz">
+    <h4>Check Your Understanding</h4>
+    <p>Why do we multiply each micro-step's loss by <code>grad_scale</code> in gradient accumulation?</p>
+    <button class="quiz-opt" onclick="checkQuiz(this,'wrong','q7')">A. To prevent gradient explosion when gradients are too large</button>
+    <button class="quiz-opt" onclick="checkQuiz(this,'wrong','q7')">B. To prevent underflow in mixed precision computation</button>
+    <button class="quiz-opt" onclick="checkQuiz(this,'correct','q7')">C. So the accumulated gradient equals the average gradient of the full batch</button>
+    <button class="quiz-opt" onclick="checkQuiz(this,'wrong','q7')">D. To dynamically adjust the learning rate</button>
+    <div class="quiz-explain" id="q7">
+      When we backward <code>loss * (1/grad_accum_steps)</code> at each micro-step, the accumulated gradient becomes equivalent to the average gradient of the full batch. This ensures consistent learning behavior whether we use accumulation or not.
+    </div>
+  </div>
+
+  <button class="next-ch" onclick="go(8)">Chapter 9: Quantization &rarr;</button>
+</div>
+
+<!-- ====== CHAPTER 9 ====== -->
+<div class="chapter" id="ch8">
+  <div class="intro-box">
+    <span class="tag tag-ch">Chapter 9</span>
+    <span class="tag tag-topic">Compression</span>
+    <h2>int8 Quantization and zlib Compression</h2>
+    <p>
+      Once training finishes, we need to submit the model. The competition has a submission size limit of <strong>16MB</strong>. An fp32 model far exceeds this, so we need int8 quantization and zlib compression. The goal is to shrink the model dramatically while losing as little precision as possible.
+    </p>
+  </div>
+
+  <div class="concept" onclick="this.classList.add('open')">
+    <div class="concept-head">
+      <span class="arrow">&#9654;</span>
+      <span class="num">1</span>
+      <h3>What is int8 Quantization?</h3>
+      <span class="brief">32-bit to 8-bit</span>
+    </div>
+    <div class="concept-body">
+      <p>
+        Quantization converts high-precision numbers to low-precision ones. An fp32 weight takes 4 bytes, but int8 takes 1 byte. That's a 4x compression in theory.
+      </p>
+      <div class="analogy">
+        <p>
+          Think of a watercolor painting. The original uses millions of colors, but if you redraw it with a limited palette of 256 colors, it looks nearly the same to the eye. You lose subtle color gradations, but the overall picture stays intact.
+        </p>
+      </div>
+      <div class="dia">
+        <svg viewBox="0 0 700 80">
+          <rect x="10" y="15" width="200" height="50" rx="10" fill="#e8e8e8"/>
+          <text x="110" y="37" text-anchor="middle" fill="#0a0a0a" font-size="11" font-weight="700">fp32 weight</text>
+          <text x="110" y="53" text-anchor="middle" fill="#505050" font-size="9">4 bytes per value</text>
+          <line x1="215" y1="40" x2="300" y2="40" stroke="#787878" stroke-width="1.2" marker-end="url(#a1d)"/>
+          <text x="257" y="32" text-anchor="middle" fill="#787878" font-size="9">quantize</text>
+          <rect x="305" y="15" width="170" height="50" rx="10" fill="var(--card)" stroke="var(--border)" stroke-width="1"/>
+          <text x="390" y="37" text-anchor="middle" fill="#b0b0b0" font-size="11" font-weight="600">int8 + scale</text>
+          <text x="390" y="53" text-anchor="middle" fill="#505050" font-size="9">~1.01 bytes per value</text>
+          <line x1="480" y1="40" x2="555" y2="40" stroke="#787878" stroke-width="1.2" marker-end="url(#a1d)"/>
+          <text x="517" y="32" text-anchor="middle" fill="#787878" font-size="9">zlib</text>
+          <rect x="560" y="15" width="130" height="50" rx="10" fill="var(--card)" stroke="var(--ac-purple-dim)" stroke-width="1"/>
+          <text x="625" y="37" text-anchor="middle" fill="var(--ac-purple)" font-size="11" font-weight="600">.int8.ptz</text>
+          <text x="625" y="53" text-anchor="middle" fill="#505050" font-size="9">&lt; 16MB</text>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <div class="concept" onclick="this.classList.add('open')">
+    <div class="concept-head">
+      <span class="arrow">&#9654;</span>
+      <span class="num">2</span>
+      <h3>Per-Row Scale: Preserving Precision Per Row</h3>
+      <span class="brief">Strategy for 2D matrices</span>
+    </div>
+    <div class="concept-body">
+      <p>
+        If we use a single scale factor for the entire matrix, we lose precision when value ranges differ across rows. We use <strong>per-row scale</strong>: each row gets its own scale factor, preserving differences in value ranges across rows.
+      </p>
+      <div class="codeblock">
+<span class="kw">def</span> <span class="fn">quantize_float_tensor</span>(t32):
+    <span class="kw">if</span> t32.ndim == <span class="num">2</span>:
+        <span class="cm"># Clip by quantile per row, then calculate scale</span>
+        clip_abs = torch.<span class="aq">quantile</span>(
+            t32.<span class="aq">abs</span>(), INT8_CLIP_Q, dim=<span class="num">1</span>)
+        scale = (clip_abs / <span class="num">127.0</span>).<span class="aq">clamp_min</span>(<span class="num">1.0</span>/<span class="num">127.0</span>)
+        q = torch.<span class="aq">round</span>(clipped / scale[:, <span class="kw">None</span>])
+        <span class="kw">return</span> q.<span class="aq">to</span>(torch.int8), scale</div>
+      <p>
+        <code>INT8_CLIP_Q</code> uses quantile-based clipping to remove extreme outliers, boosting precision for the remaining values. We use the 0.9999 quantile in this project.
+      </p>
+    </div>
+  </div>
+
+  <div class="concept" onclick="this.classList.add('open')">
+    <div class="concept-head">
+      <span class="arrow">&#9654;</span>
+      <span class="num">3</span>
+      <h3>Small Tensors Don't Get Quantized</h3>
+      <span class="brief">fp16 passthrough</span>
+    </div>
+    <div class="concept-body">
+      <p>
+        We don't quantize every tensor. For tensors with few elements, quantization error is relatively large, and the overhead of int8 + scale actually hurts. We just cast them to fp16 and save them as-is.
+      </p>
+      <div class="highlight hl-white">
+        <strong>Decision threshold:</strong> Tensors with <code>INT8_KEEP_FLOAT_MAX_NUMEL</code> or fewer elements stay in fp16 without quantization. This includes scalar parameters like attn_scale and mlp_scale.
+      </div>
+    </div>
+  </div>
+
+  <div class="concept" onclick="this.classList.add('open')">
+    <div class="concept-head">
+      <span class="arrow">&#9654;</span>
+      <span class="num">4</span>
+      <h3>zlib Compression and Roundtrip Verification</h3>
+      <span class="brief">Final size reduction</span>
+    </div>
+    <div class="concept-body">
+      <p>
+        After int8 quantization, we apply zlib compression on top. zlib finds repeating patterns and compresses them losslessly. The final filename extension <code>.int8.ptz</code> indicates this quantized+compressed format.
+      </p>
+      <div class="codeblock">
+quant_obj, quant_stats = <span class="fn">quantize_state_dict_int8</span>(
+    base_model.<span class="aq">state_dict</span>())
+quant_buf = io.<span class="fn">BytesIO</span>()
+torch.<span class="aq">save</span>(quant_obj, quant_buf)
+quant_blob = zlib.<span class="aq">compress</span>(quant_buf.<span class="aq">getvalue</span>(), level=<span class="num">9</span>)
+
+<span class="cm"># Roundtrip verification: decompress → restore → re-evaluate</span>
+quant_state = torch.<span class="aq">load</span>(
+    io.<span class="fn">BytesIO</span>(zlib.<span class="aq">decompress</span>(quant_blob_disk)))
+base_model.<span class="aq">load_state_dict</span>(
+    <span class="fn">dequantize_state_dict_int8</span>(quant_state))</div>
+      <div class="highlight hl-red">
+        <strong>Why roundtrip verification matters:</strong> Quantization loses information. We need to check that when we decompress and restore the model, performance hasn't degraded too much. So we remeasure val_loss and val_bpb after roundtrip.
+      </div>
+    </div>
+  </div>
+
+  <div class="quiz">
+    <h4>Check Your Understanding</h4>
+    <p>Why does this project use per-row scale?</p>
+    <button class="quiz-opt" onclick="checkQuiz(this,'wrong','q8')">A. To speed up matrix multiplication</button>
+    <button class="quiz-opt" onclick="checkQuiz(this,'wrong','q8')">B. To save GPU memory</button>
+    <button class="quiz-opt" onclick="checkQuiz(this,'correct','q8')">C. Because different rows can have different value ranges, preserving each row's precision independently</button>
+    <button class="quiz-opt" onclick="checkQuiz(this,'wrong','q8')">D. To improve zlib compression ratio</button>
+    <div class="quiz-explain" id="q8">
+      Each row of a 2D matrix corresponds to a different output channel and can have different value distributions. A single scale factor would scale to the largest value in the entire matrix, losing precision in smaller values. Per-row scale lets each row be scaled to its own range, keeping precision uniform across all rows.
+    </div>
+  </div>
+
+  <button class="next-ch" onclick="go(9)">Chapter 10: bits-per-byte &rarr;</button>
+</div>
+<!-- ====== CHAPTER 10 ====== -->
+<div class="chapter" id="ch9">
+  <div class="intro-box">
+    <span class="tag tag-ch">Chapter 10</span>
+    <span class="tag tag-topic">Evaluation</span>
+    <h2>bits-per-byte: A Fair Evaluation Metric</h2>
+    <p>
+      How do we measure how well a model has learned? Cross-entropy loss alone can't compare models using different tokenizers.
+      We use <strong>bits-per-byte</strong>, a tokenizer-independent metric.
+    </p>
+  </div>
+
+  <div class="concept" onclick="this.classList.add('open')">
+    <div class="concept-head">
+      <span class="arrow">&#9654;</span>
+      <span class="num">1</span>
+      <h3>Why Loss Alone Isn't Enough</h3>
+      <span class="brief">The tokenizer dependency problem</span>
+    </div>
+    <div class="concept-body">
+      <p>
+        Cross-entropy loss measures "average information loss per token."
+        But the same text generates many more tokens with a vocab=1024 tokenizer than with vocab=100K.
+        More tokens make individual predictions easier, so loss looks lower—but that's a property of the tokenizer being fine-grained, not the model being better.
+      </p>
+      <div class="highlight hl-purple">
+        <strong>The key to fair comparison:</strong> We need to separate model performance from tokenizer design.
+        bits-per-byte measures information efficiency at the byte level of the original text, so we can compare fairly across different tokenizers.
+      </div>
+    </div>
+  </div>
+
+  <div class="concept" onclick="this.classList.add('open')">
+    <div class="concept-head">
+      <span class="arrow">&#9654;</span>
+      <span class="num">2</span>
+      <h3>How bits-per-byte Works</h3>
+      <span class="brief">nats → bits → bytes</span>
+    </div>
+    <div class="concept-body">
+      <p>
+        bits-per-byte has three steps.
+        First we convert cross-entropy loss from nats to bits,
+        then from bits per token to bits per byte.
+      </p>
+      <div class="codeblock">
+<span class="cm"># 1. Sum loss across tokens</span>
+loss_sum += per_token_loss.<span class="aq">sum</span>()
+
+<span class="cm"># 2. Sum the bytes each token represents</span>
+tok_bytes = base_bytes_lut[target_ids]
+tok_bytes += has_leading_space_lut[target_ids] \
+           <span class="op">&amp;</span> ~is_boundary_token_lut[prev_ids]
+byte_sum += tok_bytes.<span class="aq">sum</span>()
+
+<span class="cm"># 3. bits-per-byte = total_loss_in_bits / total_bytes</span>
+val_bpb = (loss_sum / <span class="fn">ln</span>(<span class="num">2</span>)) / byte_sum</div>
+      <p>
+        <code>base_bytes_lut</code> is the lookup table we built in Chapter 2. It records how many bytes each token represents in the original text.
+        Whitespace handling is careful too. We accurately account for the single leading space byte represented by SentencePiece's <code>&#9601;</code> symbol.
+      </p>
+    </div>
+  </div>
+
+  <div class="concept" onclick="this.classList.add('open')">
+    <div class="concept-head">
+      <span class="arrow">&#9654;</span>
+      <span class="num">3</span>
+      <h3>What bits-per-byte Actually Means</h3>
+      <span class="brief">A measure of compression efficiency</span>
+    </div>
+    <div class="concept-body">
+      <p>
+        If bits-per-byte is 1.0, the model could compress the original text to 1/8 of its size.
+        Normally a byte needs 8 bits, but here only 1 bit would be needed.
+        The lower the value, the better the model "understands" the text.
+      </p>
+      <table class="tbl">
+        <tr><th>bits-per-byte</th><th>Meaning</th></tr>
+        <tr><td>8.0</td><td>No predictions. Pure random guessing</td></tr>
+        <tr><td>~5.0</td><td>Basic character frequency level predictions</td></tr>
+        <tr><td>~1.0</td><td>Very good language model</td></tr>
+        <tr><td>&lt; 0.8</td><td>State-of-the-art large model level</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="quiz">
+    <h4>Check Your Understanding</h4>
+    <p>Model A with vocab=1024 and Model B with vocab=32000 both record the same cross-entropy loss. Which model will have a lower bits-per-byte?</p>
+    <button class="quiz-opt" onclick="checkQuiz(this,'wrong','q9')">A. Model A has lower bits-per-byte</button>
+    <button class="quiz-opt" onclick="checkQuiz(this,'correct','q9')">B. Model B has lower bits-per-byte</button>
+    <button class="quiz-opt" onclick="checkQuiz(this,'wrong','q9')">C. Both have the same bits-per-byte</button>
+    <button class="quiz-opt" onclick="checkQuiz(this,'wrong','q9')">D. Not enough information to tell</button>
+    <div class="quiz-explain" id="q9">
+      Even with the same loss, Model B's tokens each represent more bytes.
+      Since bits-per-byte is (loss_in_bits * tokens) / total_bytes, Model B covers more bytes per token, giving it lower bits-per-byte.
+      This is exactly why we can't rely on loss alone for comparison.
+    </div>
+  </div>
+
+  <button class="next-ch" onclick="go(10)">Chapter 11: Test-Time Training &rarr;</button>
+</div>
+
+<!-- ====== CHAPTER 11 ====== -->
+<div class="chapter" id="ch10">
+  <div class="intro-box">
+    <span class="tag tag-ch">Chapter 11</span>
+    <span class="tag tag-topic">Advanced</span>
+    <h2>Test-Time Training: Per-Document LoRA Adaptation</h2>
+    <p>
+      Normally a model's weights are fixed once training ends, and we use them as-is during evaluation.
+      But we go further: we <strong>fine-tune the model for each document during evaluation</strong>.
+      We call this technique Test-Time Training (TTT), and we implement it efficiently with LoRA.
+    </p>
+  </div>
+
+  <div class="concept" onclick="this.classList.add('open')">
+    <div class="concept-head">
+      <span class="arrow">&#9654;</span>
+      <span class="num">1</span>
+      <h3>LoRA: Adapting with Few Parameters</h3>
+      <span class="brief">Low-Rank Adaptation</span>
+    </div>
+    <div class="concept-body">
+      <p>
+        Low-Rank Adaptation (LoRA) keeps the original weights frozen and adapts the model by learning only a small additional matrix.
+        We add <strong>ΔW = BA</strong> to the original weight matrix W, where B and A are low-rank matrices.
+        If A has shape (rank, input_dim) and B has shape (output_dim, rank), a small rank means very few extra parameters.
+      </p>
+      <div class="dia">
+        <svg viewBox="0 0 700 100">
+          <rect x="10" y="25" width="160" height="50" rx="10" fill="#e8e8e8"/>
+          <text x="90" y="47" text-anchor="middle" fill="#0a0a0a" font-size="11" font-weight="700">x (input)</text>
+          <text x="90" y="63" text-anchor="middle" fill="#505050" font-size="9">(batch, seq, dim)</text>
+          <line x1="175" y1="50" x2="235" y2="30" stroke="#787878" stroke-width="1" marker-end="url(#a1d)"/>
+          <line x1="175" y1="50" x2="235" y2="70" stroke="var(--ac-purple-dim)" stroke-width="1" marker-end="url(#a1d)"/>
+          <rect x="240" y="5" width="180" height="40" rx="8" fill="var(--card)" stroke="var(--border)" stroke-width="1"/>
+          <text x="330" y="22" text-anchor="middle" fill="#b0b0b0" font-size="10" font-weight="600">W (frozen base)</text>
+          <text x="330" y="38" text-anchor="middle" fill="#505050" font-size="9">(dim, out_dim)</text>
+          <rect x="240" y="55" width="180" height="40" rx="8" fill="var(--card)" stroke="var(--ac-purple-dim)" stroke-width="1"/>
+          <text x="330" y="72" text-anchor="middle" fill="var(--ac-purple)" font-size="10" font-weight="600">BA (LoRA adapter)</text>
+          <text x="330" y="88" text-anchor="middle" fill="#505050" font-size="9">rank=8, trainable</text>
+          <line x1="425" y1="25" x2="495" y2="50" stroke="#787878" stroke-width="1" marker-end="url(#a1d)"/>
+          <line x1="425" y1="75" x2="495" y2="50" stroke="var(--ac-purple-dim)" stroke-width="1" marker-end="url(#a1d)"/>
+          <text x="478" y="42" text-anchor="middle" fill="#787878" font-size="9">+</text>
+          <rect x="500" y="25" width="170" height="50" rx="10" fill="#e8e8e8"/>
+          <text x="585" y="47" text-anchor="middle" fill="#0a0a0a" font-size="11" font-weight="700">output</text>
+          <text x="585" y="63" text-anchor="middle" fill="#505050" font-size="9">x@W + x@A&#7488;@B&#7488;</text>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <div class="concept" onclick="this.classList.add('open')">
+    <div class="concept-head">
+      <span class="arrow">&#9654;</span>
+      <span class="num">2</span>
+      <h3>Per-Document Independent Adaptation: Batched LoRA</h3>
+      <span class="brief">Separate adapter for each document</span>
+    </div>
+    <div class="concept-body">
+      <p>
+        The heart of TTT in this project is <strong>training independent LoRA adapters for each document, identified by document boundaries at BOS tokens</strong>.
+        We divide each document into chunks and adapt them sequentially.
+      </p>
+      <div class="codeblock">
+<span class="kw">class</span> <span class="fn">BatchedTTTLoRA</span>(nn.Module):
+    <span class="cm"># Independent LoRA adapter for each batch element</span>
+    <span class="kw">def</span> <span class="fn">__init__</span>(self, bsz, model, rank):
+        self.lm_head_lora = <span class="fn">BatchedLinearLoRA</span>(
+            bsz, dim, vocab, rank)
+        self.q_loras = nn.<span class="fn">ModuleList</span>()
+        self.v_loras = nn.<span class="fn">ModuleList</span>()
+        <span class="kw">for</span> block <span class="kw">in</span> model.blocks:
+            self.q_loras.<span class="aq">append</span>(
+                <span class="fn">BatchedLinearLoRA</span>(...))  <span class="cm"># Q projection</span>
+            self.v_loras.<span class="aq">append</span>(
+                <span class="fn">BatchedLinearLoRA</span>(...))  <span class="cm"># V projection</span></div>
+      <p>
+        Adapters are applied to the LM head and the Q and V projections of each block.
+        We don't apply them to K—Q and V alone give us enough adaptation capacity while keeping parameter counts down.
+      </p>
+    </div>
+  </div>
+
+  <div class="concept" onclick="this.classList.add('open')">
+    <div class="concept-head">
+      <span class="arrow">&#9654;</span>
+      <span class="num">3</span>
+      <h3>Chunk-by-Chunk Learning and Evaluation</h3>
+      <span class="brief">score-then-train</span>
+    </div>
+    <div class="concept-body">
+      <p>
+        We divide each document into 256-token chunks.
+        Within each chunk, we follow a "score first, then train" order.
+        We record the loss for the current chunk in our bits-per-byte calculation, then use that same loss to update the LoRA adapter.
+        This way, when we predict the next chunk, we can use patterns learned from the previous one.
+      </p>
+      <div class="highlight hl-purple">
+        <strong>Score-then-train:</strong> We use a chunk's loss for evaluation, then use the same data for training.
+        Evaluation and training aren't separate—we train immediately after evaluation on the same data, which improves predictions for the next chunk.
+        The final chunk is evaluated only, with no training. There's nothing to predict after it anyway.
+      </div>
+    </div>
+  </div>
+
+  <div class="concept" onclick="this.classList.add('open')">
+    <div class="concept-head">
+      <span class="arrow">&#9654;</span>
+      <span class="num">4</span>
+      <h3>Why TTT Matters: Computing the Competition Score</h3>
+      <span class="brief">The final val_bpb</span>
+    </div>
+    <div class="concept-body">
+      <p>
+        In this project, TTT LoRA results determine <strong>the final competition score</strong>.
+        After training completes and the model goes through int8+zlib roundtrip, we apply TTT LoRA and measure val_bpb—that's our final submission score.
+      </p>
+      <div class="codeblock">
+<span class="cm"># Computing the final competition score</span>
+torch._dynamo.<span class="aq">reset</span>()
+ttt_val_loss, ttt_val_bpb = <span class="fn">eval_val_ttt_lora</span>(
+    args, base_model, rank, world_size, device,
+    base_bytes_lut, has_leading_space_lut,
+    is_boundary_token_lut)</div>
+      <p>
+        The val_bpb with TTT applied is lower than the base model's val_bpb.
+        That shows document-level adaptation meaningfully improves prediction performance.
+      </p>
+    </div>
+  </div>
+
+  <div class="quiz">
+    <h4>Final Check</h4>
+    <p>Why does TTT LoRA evaluate the final chunk without training on it?</p>
+    <button class="quiz-opt" onclick="checkQuiz(this,'wrong','q10')">A. The final chunk has insufficient data</button>
+    <button class="quiz-opt" onclick="checkQuiz(this,'wrong','q10')">B. To prevent overfitting</button>
+    <button class="quiz-opt" onclick="checkQuiz(this,'correct','q10')">C. Training aims to improve predictions on future chunks, but there are no chunks after the final one to predict</button>
+    <button class="quiz-opt" onclick="checkQuiz(this,'wrong','q10')">D. Due to memory constraints</button>
+    <div class="quiz-explain" id="q10">
+      TTT training has one purpose: improving predictions on the next chunk.
+      After the final chunk, there's nothing left to predict, so training would be pointless.
+      Plus, we avoid keeping the gradient graph, which saves memory.
+    </div>
+  </div>
+
+  <div class="highlight hl-purple" style="margin-top:32px">
+    <strong>Full pipeline summary:</strong> Text becomes integer IDs through the BPE tokenizer and gets stored in binary shards.
+    During training, TokenStream reads the data and distributes it to GPUs. Token IDs become vectors through embedding,
+    pass through 9 transformer blocks. Muon and Adam optimize matrix and scalar parameters respectively.
+    After 20,000 steps or 10 minutes, training ends. We compress the model to under 16MB using int8 quantization + zlib compression.
+    Final evaluation applies per-document LoRA TTT to the quantized model and measures bits-per-byte.
+  </div>
+</div>
+
+</div>
+
+<script>
+function go(idx){
+  document.querySelectorAll('.chapter').forEach((c,i)=>c.classList.toggle('active',i===idx));
+  document.querySelectorAll('.ch-btn').forEach((b,i)=>b.classList.toggle('active',i===idx));
+  document.getElementById('progress').style.width=((idx+1)/11*100)+'%';
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function checkQuiz(btn,result,explainId){
+  const p=btn.closest('.quiz');
+  if(p.dataset.answered)return;
+  p.dataset.answered='1';
+  btn.classList.add(result);
+  if(result==='wrong')p.querySelectorAll('.quiz-opt').forEach(b=>{if(b.getAttribute('onclick').includes("'correct'"))b.classList.add('correct')});
+  document.getElementById(explainId).style.display='block';
+}
+</script>
+</body>
+</html>
