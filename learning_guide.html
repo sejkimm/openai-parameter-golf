@@ -1,0 +1,1875 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>train_gpt.py Step-by-Step Learning Guide</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Google+Sans+Flex:wght@400;500;600;700;800&family=Google+Sans+Code:wght@400;500&family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap');
+:root {
+  /* Base B&W palette — dark background */
+  --bg: #0a0a0a; --bg2: #111111; --card: #141414; --card2: #1a1a1a;
+  --text: #e8e8e8; --t2: #b0b0b0; --t3: #787878; --t4: #505050; --t5: #333333;
+  --white: #f0f0f0; --border: #222222; --border2: #2a2a2a;
+
+  /* Low-saturation accent gradation: purple → red → blue */
+  --ac-purple: #8a7191; --ac-purple-dim: #5e4d65;
+  --ac-red: #91706e; --ac-red-dim: #6b4f4d;
+  --ac-blue: #6e7d91; --ac-blue-dim: #4d5a6b;
+  /* Even subtler tints for backgrounds */
+  --ac-purple-bg: rgba(138,113,145,.07); --ac-red-bg: rgba(145,112,110,.07); --ac-blue-bg: rgba(110,125,145,.07);
+
+  /* Gruvbox Material Hard Dark — code theme */
+  --gb-bg: #000000; --gb-fg: #d4be98; --gb-gray: #665c54; --gb-red: #ea6962;
+  --gb-green: #a9b665; --gb-yellow: #d8a657; --gb-blue: #7daea3; --gb-purple: #d3869b;
+  --gb-aqua: #89b482; --gb-orange: #e78a4e;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+::selection{background:var(--ac-purple-dim);color:var(--white)}
+body{background:var(--bg);color:var(--text);font-family:'Google Sans Flex','IBM Plex Sans KR',-apple-system,BlinkMacSystemFont,sans-serif;line-height:1.7;-webkit-font-smoothing:antialiased}
+.wrap{max-width:880px;margin:0 auto;padding:48px 28px 80px}
+
+h1{font-size:32px;font-weight:800;letter-spacing:-.02em;color:var(--white);margin-bottom:6px}
+.sub{font-size:13px;color:var(--t3);margin-bottom:0;letter-spacing:.01em}
+
+/* Progress */
+.progress-bar{height:2px;background:var(--t5);margin:28px 0 32px;border-radius:1px;overflow:hidden}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--ac-purple),var(--ac-red),var(--ac-blue));transition:width .5s cubic-bezier(.4,0,.2,1);border-radius:1px}
+
+/* Nav */
+.chapters{display:flex;gap:0;margin-bottom:40px;border-bottom:1px solid var(--border);overflow-x:auto}
+.ch-btn{padding:12px 20px;font-size:12px;font-weight:500;color:var(--t3);background:none;border:none;border-bottom:2px solid transparent;cursor:pointer;white-space:nowrap;transition:all .2s;letter-spacing:.01em;font-family:inherit}
+.ch-btn:hover{color:var(--t2)}
+.ch-btn.active{color:var(--white);border-bottom-color:var(--ac-purple);font-weight:600}
+
+.chapter{display:none}.chapter.active{display:block}
+
+/* Intro */
+.intro-box{border:1px solid var(--border);border-radius:16px;padding:28px 32px;margin-bottom:32px;background:var(--card)}
+.intro-box h2{font-size:22px;font-weight:700;margin-bottom:12px;color:var(--white);letter-spacing:-.01em}
+.intro-box .tag{display:inline-block;font-size:10px;font-weight:600;padding:3px 10px;border-radius:20px;margin-right:6px;margin-bottom:10px;letter-spacing:.04em;text-transform:uppercase}
+.tag-ch{background:var(--ac-purple-dim);color:var(--white)}
+.tag-topic{background:var(--border2);color:var(--t2)}
+.intro-box p{font-size:13.5px;color:var(--t2);line-height:1.85}
+.intro-box strong{color:var(--white)}
+
+/* Concept cards */
+.concept{background:var(--card);border:1px solid var(--border);border-radius:14px;margin-bottom:14px;overflow:hidden;transition:all .25s}
+.concept:hover{border-color:var(--t5)}
+.concept-head{padding:20px 24px;cursor:pointer;display:flex;align-items:center;gap:14px}
+.concept-head .arrow{font-size:10px;color:var(--t4);transition:transform .25s;flex-shrink:0}
+.concept.open .concept-head .arrow{transform:rotate(90deg);color:var(--ac-purple)}
+.concept-head .num{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;border:1.5px solid var(--t5);color:var(--t3);background:transparent}
+.concept.open .concept-head .num{background:var(--white);color:var(--bg);border-color:var(--white)}
+.concept-head h3{font-size:14px;font-weight:600;flex:1;color:var(--t2)}
+.concept.open .concept-head h3{color:var(--white)}
+.concept-head .brief{font-size:11px;color:var(--t4);margin-left:auto;white-space:nowrap}
+.concept-body{display:none;padding:0 24px 22px}
+.concept.open .concept-body{display:block;padding-top:18px;border-top:1px solid var(--border)}
+.concept-body p{font-size:13px;color:var(--t2);line-height:1.9;margin-bottom:14px}
+.concept-body p:last-child{margin-bottom:0}
+.concept-body strong{color:var(--white)}
+
+/* Inline code */
+code{background:var(--bg2);color:var(--gb-fg);padding:2px 7px;border-radius:5px;font-size:11.5px;font-family:'Google Sans Code',monospace;border:1px solid var(--border)}
+
+/* Code blocks — Gruvbox Material Hard #000 */
+.codeblock{background:var(--gb-bg);border:1px solid var(--border);border-radius:12px;padding:18px 22px;margin:14px 0;font-family:'Google Sans Code',monospace;font-size:11.5px;line-height:1.9;overflow-x:auto;color:var(--gb-fg);white-space:pre}
+.codeblock .kw{color:var(--gb-red)}.codeblock .fn{color:var(--gb-green);font-weight:500}.codeblock .num{color:var(--gb-purple)}
+.codeblock .cm{color:var(--gb-gray);font-style:italic}.codeblock .str{color:var(--gb-yellow)}.codeblock .op{color:var(--gb-orange)}
+.codeblock .bi{color:var(--gb-blue)}.codeblock .aq{color:var(--gb-aqua)}
+
+/* Diagrams */
+.dia{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:24px;margin:16px 0;overflow-x:auto}
+.dia svg{width:100%;min-width:600px}
+.dia svg text{font-family:'Google Sans Flex','IBM Plex Sans KR',-apple-system,sans-serif}
+
+/* Highlights — low-sat accent tints */
+.highlight{border-radius:12px;padding:18px 22px;margin:16px 0;font-size:12.5px;line-height:1.85}
+.highlight strong{display:inline}
+.hl-purple{background:var(--ac-purple-bg);border:1px solid var(--ac-purple-dim);color:var(--t2)}
+.hl-purple strong{color:var(--ac-purple)}
+.hl-red{background:var(--ac-red-bg);border:1px solid var(--ac-red-dim);color:var(--t2)}
+.hl-red strong{color:var(--ac-red)}
+.hl-blue{background:var(--ac-blue-bg);border:1px solid var(--ac-blue-dim);color:var(--t2)}
+.hl-blue strong{color:var(--ac-blue)}
+.hl-white{background:var(--card2);border:1px solid var(--border);color:var(--t2)}
+.hl-white strong{color:var(--white)}
+
+/* Analogy */
+.analogy{background:var(--card2);border-left:3px solid var(--t4);border-radius:0 12px 12px 0;padding:18px 22px;margin:16px 0}
+.analogy::before{content:"ANALOGY";display:block;font-size:9px;font-weight:700;color:var(--t4);letter-spacing:.1em;margin-bottom:6px}
+.analogy p{font-size:12.5px;color:var(--t2);line-height:1.85}
+
+/* Quiz */
+.quiz{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:24px;margin:24px 0}
+.quiz h4{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ac-purple);margin-bottom:14px}
+.quiz>p{font-size:13px;color:var(--t2);margin-bottom:14px}
+.quiz-opt{display:block;width:100%;text-align:left;padding:12px 18px;margin-bottom:8px;background:var(--bg2);border:1px solid var(--border);border-radius:10px;color:var(--t2);font-size:12.5px;cursor:pointer;transition:all .15s;font-family:inherit}
+.quiz-opt:hover{border-color:var(--t4);color:var(--white);background:var(--card2)}
+.quiz-opt.correct{background:var(--white);border-color:var(--white);color:var(--bg)}
+.quiz-opt.wrong{background:var(--bg);border-color:var(--border);color:var(--t4);text-decoration:line-through}
+.quiz-explain{display:none;margin-top:14px;font-size:12.5px;color:var(--t2);line-height:1.8;padding:16px 18px;background:var(--bg2);border-radius:10px;border:1px solid var(--border)}
+
+/* Table */
+.tbl{width:100%;border-collapse:collapse;margin:14px 0;font-size:12.5px}
+.tbl th{text-align:left;padding:12px 16px;background:var(--bg2);color:var(--t3);font-weight:600;border-bottom:1px solid var(--border);font-size:11px;letter-spacing:.02em;text-transform:uppercase}
+.tbl td{padding:12px 16px;border-bottom:1px solid var(--border);color:var(--t2)}
+.tbl tr:hover td{background:var(--card2)}
+
+/* Next chapter */
+.next-ch{display:inline-flex;align-items:center;gap:8px;margin-top:32px;padding:14px 32px;background:var(--white);color:var(--bg);border:none;border-radius:12px;font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;font-family:inherit;letter-spacing:.01em}
+.next-ch:hover{opacity:.85;transform:translateY(-1px);box-shadow:0 4px 20px rgba(255,255,255,.08)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>train_gpt.py 기초부터 이해하기</h1>
+<p class="sub">Step-by-Step Learning Guide &mdash; Tokenizer에서 Transformer 학습까지</p>
+
+<div class="progress-bar"><div class="progress-fill" id="progress" style="width:9%"></div></div>
+
+<div class="chapters">
+  <button class="ch-btn active" onclick="go(0)">Ch.1 Tokenizer 기초</button>
+  <button class="ch-btn" onclick="go(1)">Ch.2 이 프로젝트의 Tokenizer</button>
+  <button class="ch-btn" onclick="go(2)">Ch.3 Binary Shard와 Data Loading</button>
+  <button class="ch-btn" onclick="go(3)">Ch.4 Embedding: 숫자에서 의미로</button>
+  <button class="ch-btn" onclick="go(4)">Ch.5 Attention: 문맥 이해하기</button>
+  <button class="ch-btn" onclick="go(5)">Ch.6 전체 Transformer Block</button>
+  <button class="ch-btn" onclick="go(6)">Ch.7 Multi-Optimizer</button>
+  <button class="ch-btn" onclick="go(7)">Ch.8 Training Loop</button>
+  <button class="ch-btn" onclick="go(8)">Ch.9 Quantization</button>
+  <button class="ch-btn" onclick="go(9)">Ch.10 bits-per-byte</button>
+  <button class="ch-btn" onclick="go(10)">Ch.11 Test-Time Training</button>
+</div>
+
+<!-- ====== CHAPTER 1 ====== -->
+<div class="chapter active" id="ch0">
+  <div class="intro-box">
+    <span class="tag tag-ch">Chapter 1</span>
+    <span class="tag tag-topic">Foundation</span>
+    <h2>Tokenizer: 텍스트를 숫자로 바꾸는 첫 번째 관문</h2>
+    <p>
+      컴퓨터는 문자열을 직접 이해하지 못해요. 신경망이 텍스트를 처리하려면 먼저 텍스트를
+      <strong>숫자의 나열</strong>로 변환해야 해요. 이 변환을 담당하는 것이 tokenizer에요.
+      Tokenizer의 설계가 모델의 성능, 크기, 학습 효율에 직접적인 영향을 미쳐요.
+    </p>
+  </div>
+
+  <div class="concept" onclick="this.classList.add('open')">
+    <div class="concept-head">
+      <span class="arrow">&#9654;</span>
+      <span class="num">1</span>
+      <h3>Tokenizer란 무엇인가</h3>
+      <span class="brief">text &rarr; numbers</span>
+    </div>
+    <div class="concept-body">
+      <p>
+        Tokenizer는 텍스트 문자열을 <strong>token</strong>이라 부르는 단위로 쪼개고, 각 token에 고유한 정수 ID를 부여하는 도구에요.
+        예를 들어 "Hello world"라는 문자열이 tokenizer를 통과하면 <code>[15496, 995]</code> 같은 정수 배열이 돼요.
+      </p>
+      <p>
+        반대 과정도 가능해요. 정수 배열을 다시 텍스트로 복원하는 것을 <strong>decoding</strong>이라 불러요.
+        Token은 단어일 수도 있고, 단어의 일부일 수도 있고, 심지어 단일 문자나 byte일 수도 있어요.
+        어떤 단위로 쪼개느냐가 tokenizer의 핵심 설계 결정이에요.
+      </p>
+      <div class="dia">
+        <svg viewBox="0 0 700 90">
+          <defs>
+            <marker id="a1" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><polygon points="0 0,7 2.5,0 5" fill="#e8e8e8"/></marker>
+            <marker id="a1d" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><polygon points="0 0,7 2.5,0 5" fill="#787878"/></marker>
+          </defs>
+          <rect x="10" y="20" width="155" height="48" rx="10" fill="#e8e8e8"/>
+          <text x="87" y="42" text-anchor="middle" fill="#0a0a0a" font-size="14" font-weight="700">"Hello world"</text>
+          <text x="87" y="58" text-anchor="middle" fill="#505050" font-size="9">raw text string</text>
+          <line x1="170" y1="44" x2="228" y2="44" stroke="#787878" stroke-width="1.2" marker-end="url(#a1d)"/>
+          <text x="199" y="37" text-anchor="middle" fill="#787878" font-size="9" font-weight="500">tokenize</text>
+          <rect x="233" y="20" width="200" height="48" rx="10" fill="none" stroke="#505050" stroke-width="1.2"/>
+          <text x="333" y="42" text-anchor="middle" fill="#b0b0b0" font-size="14" font-weight="600">["Hello", " world"]</text>
+          <text x="333" y="58" text-anchor="middle" fill="#505050" font-size="9">token sequence</text>
+          <line x1="438" y1="44" x2="498" y2="44" stroke="#787878" stroke-width="1.2" marker-end="url(#a1d)"/>
+          <text x="468" y="37" text-anchor="middle" fill="#787878" font-size="9" font-weight="500">encode</text>
+          <rect x="503" y="20" width="170" height="48" rx="10" fill="#141414" stroke="#505050" stroke-width="1"/>
+          <text x="588" y="42" text-anchor="middle" fill="#e8e8e8" font-size="14" font-weight="700">[15496, 995]</text>
+          <text x="588" y="58" text-anchor="middle" fill="#505050" font-size="9">integer IDs</text>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <div class="concept" onclick="this.classList.add('open')">
+    <div class="concept-head">
+      <span class="arrow">&#9654;</span>
+      <span class="num">2</span>
+      <h3>왜 단어 단위로 쪼개지 않나요?</h3>
+      <span class="brief">vocab size 문제</span>
+    </div>
+    <div class="concept-body">
+      <p>
+        가장 직관적인 방법은 공백 기준으로 단어를 나누는 것이에요. 하지만 이 방식에는 심각한 문제가 있어요.
+      </p>
+      <p>
+        영어만 해도 수십만 개의 단어가 있고, 고유명사, 전문용어, 신조어를 포함하면 사실상 무한해요.
+        Vocabulary가 100만 개라면, 모델은 100만 x dim 크기의 embedding table을 가져야 해요.
+        이 프로젝트처럼 16MB 제한이 있으면 모델 대부분이 embedding table로 채워져서 실제 학습에 쓸 parameter가
+        남지 않아요.
+      </p>
+      <p>
+        반대로 개별 문자나 byte 단위로 쪼개면 vocabulary는 아주 작아지지만, sequence가 매우 길어져요.
+        "Hello"가 5개의 token이 되면 모델이 처리해야 할 sequence 길이가 급격히 늘어나고,
+        attention 연산량이 sequence 길이의 제곱에 비례하므로 비용이 폭증해요.
+      </p>
+      <div class="highlight hl-purple">
+        <strong>핵심 trade-off:</strong> vocabulary 크기가 크면 embedding table이 커지고, 작으면 sequence가 길어져요.
+        이 균형점을 찾는 것이 tokenizer 설계의 본질이에요.
+      </div>
+    </div>
+  </div>
+
+  <div class="concept" onclick="this.classList.add('open')">
+    <div class="concept-head">
+      <span class="arrow">&#9654;</span>
+      <span class="num">3</span>
+      <h3>BPE: Byte Pair Encoding</h3>
+      <span class="brief">현대 tokenizer의 핵심 알고리즘</span>
+    </div>
+    <div class="concept-body">
+      <p>
+        BPE: Byte Pair Encoding은 이 trade-off를 해결하는 가장 널리 쓰이는 알고리즘이에요.
+        GPT, LLaMA, 이 프로젝트 모두 BPE 기반 tokenizer를 사용해요.
+      </p>
+      <p>
+        BPE의 원리는 단순해요. 먼저 텍스트를 가장 작은 단위인 개별 byte나 문자로 분해해요.
+        그 다음, 훈련 데이터에서 가장 자주 연속으로 등장하는 쌍을 반복적으로 합쳐서 새로운 token을 만들어요.
+      </p>
+      <div class="analogy">
+        <p>
+          글자 블록으로 비유할 수 있어요. 처음에는 알파벳 한 글자씩 쓰인 블록만 있어요.
+          "t"와 "h"가 자주 나란히 놓이면, 이 둘을 합쳐서 "th" 블록을 새로 만들어요.
+          "th"와 "e"가 자주 붙으면 "the" 블록도 만들어요. 이 과정을 원하는 vocabulary 크기가 될 때까지 반복해요.
+        </p>
+      </div>
+      <div class="codeblock">
+<span class="cm"># 초기 상태: 모든 텍스트를 byte 단위로 분해</span>
+corpus = <span class="str">"the cat sat on the mat"</span>
+tokens = [<span class="str">'t'</span>, <span class="str">'h'</span>, <span class="str">'e'</span>, <span class="str">' '</span>, <span class="str">'c'</span>, <span class="str">'a'</span>, <span class="str">'t'</span>, ...]
+
+<span class="cm"># Step 1: 가장 빈번한 쌍 찾기 → ('t', 'h') 가 가장 많음</span>
+<span class="cm"># → 새 token 'th' 추가, vocab = [..., 'th']</span>
+
+<span class="cm"># Step 2: 이제 ('th', 'e') 가 가장 빈번</span>
+<span class="cm"># → 새 token 'the' 추가, vocab = [..., 'th', 'the']</span>
+
+<span class="cm"># Step 3: (' ', 'the') 가 빈번</span>
+<span class="cm"># → 새 token ' the' 추가</span>
+
+<span class="cm"># 원하는 vocab size에 도달할 때까지 반복</span></div>
+      <p>
+        결과적으로 자주 등장하는 단어나 단어 조각은 하나의 token이 되고, 드문 단어는 여러 token으로 분해돼요.
+        이렇게 하면 vocabulary 크기를 제한하면서도 흔한 패턴은 효율적으로 표현할 수 있어요.
+      </p>
+    </div>
+  </div>
+
+  <div class="concept" onclick="this.classList.add('open')">
+    <div class="concept-head">
+      <span class="arrow">&#9654;</span>
+      <span class="num">4</span>
+      <h3>SentencePiece: BPE의 실용적 구현</h3>
+      <span class="brief">이 프로젝트의 tokenizer library</span>
+    </div>
+    <div class="concept-body">
+      <p>
+        SentencePiece는 Google이 만든 tokenizer library로, BPE 알고리즘을 실제로 구현한 도구에요.
+        이 프로젝트에서는 <code>import sentencepiece as spm</code>으로 사용해요.
+      </p>
+      <p>
+        SentencePiece의 특징은 텍스트를 공백 기준으로 미리 나누지 않는다는 것이에요.
+        대신 공백도 일반 문자처럼 취급하되, 단어 시작 위치에 특수 기호 <code>&#9601;</code>를 붙여요.
+        예를 들어 "Hello world"는 <code>["&#9601;Hello", "&#9601;world"]</code>로 tokenize돼요.
+        이 <code>&#9601;</code> 기호는 "이 token 앞에 공백이 있었다"는 의미에요.
+      </p>
+      <div class="highlight hl-white">
+        <strong>Special tokens:</strong> SentencePiece는 일반 텍스트 token 외에도 control token을 지원해요.
+        BOS: Beginning of Sequence, EOS: End of Sequence, UNK: Unknown 같은 특수 token이 있어요.
+        이 프로젝트에서 BOS token은 문서 경계를 표시하는 데 사용돼요.
+      </div>
+    </div>
+  </div>
+
+  <div class="quiz">
+    <h4>Check Your Understanding</h4>
+    <p>BPE tokenizer의 vocabulary 크기를 늘리면 어떤 변화가 생길까요?</p>
+    <button class="quiz-opt" onclick="checkQuiz(this,'wrong','q1')">A. sequence 길이가 늘어나고, embedding table이 작아진다</button>
+    <button class="quiz-opt" onclick="checkQuiz(this,'correct','q1')">B. sequence 길이가 줄어들고, embedding table이 커진다</button>
+    <button class="quiz-opt" onclick="checkQuiz(this,'wrong','q1')">C. sequence 길이와 embedding table 모두 작아진다</button>
+    <button class="quiz-opt" onclick="checkQuiz(this,'wrong','q1')">D. 변화가 없다</button>
+    <div class="quiz-explain" id="q1">
+      Vocab 크기가 커지면 더 긴 단어나 구문이 하나의 token으로 표현되므로 sequence가 짧아져요.
+      하지만 embedding table의 행 수가 늘어나므로 table 자체는 커져요.
+      이 프로젝트에서 vocab=1024로 매우 작게 설정한 이유가 바로 16MB 크기 제한 때문이에요.
+    </div>
+  </div>
+
+  <button class="next-ch" onclick="go(1)">Chapter 2: 이 프로젝트의 Tokenizer &rarr;</button>
+</div>
+
+<!-- ====== CHAPTER 2 ====== -->
+<div class="chapter" id="ch1">
+  <div class="intro-box">
+    <span class="tag tag-ch">Chapter 2</span>
+    <span class="tag tag-topic">Project-Specific</span>
+    <h2>이 프로젝트의 Tokenizer: vocab_size = 1024</h2>
+    <p>
+      이 프로젝트는 vocab_size를 <strong>1024</strong>로 설정했어요.
+      GPT-4의 100,000+이나 LLaMA의 32,000과 비교하면 극단적으로 작은 값이에요.
+      이 선택이 전체 모델 설계에 어떤 영향을 미치는지 살펴볼게요.
+    </p>
+  </div>
+
+  <div class="concept" onclick="this.classList.add('open')">
+    <div class="concept-head">
+      <span class="arrow">&#9654;</span>
+      <span class="num">1</span>
+      <h3>왜 1024인가: 16MB 제약의 산물</h3>
+      <span class="brief">size budget 계산</span>
+    </div>
+    <div class="concept-body">
+      <p>
+        Embedding table의 크기는 <code>vocab_size x model_dim</code>이에요.
+        이 프로젝트에서는 <code>1024 x 512 = 524,288</code> parameter에요.
+        만약 vocab_size가 32,000이었다면 <code>32,000 x 512 = 16,384,000</code> parameter가 돼요.
+        fp32 기준으로 약 62MB, int8로 양자화해도 약 15.6MB에요.
+      </p>
+      <table class="tbl">
+        <tr><th>Vocab Size</th><th>Embedding Params</th><th>int8 크기</th><th>남은 budget</th></tr>
+        <tr><td><strong style="color:var(--white)">1,024</strong></td><td><strong style="color:var(--white)">524,288</strong></td><td>~0.5MB</td><td><strong style="color:var(--white)">~15.5MB</strong></td></tr>
+        <tr><td>8,192</td><td>4,194,304</td><td>~4MB</td><td>~12MB</td></tr>
+        <tr><td style="color:var(--t4)">32,000</td><td style="color:var(--t4)">16,384,000</td><td style="color:var(--t4)">~15.6MB</td><td style="color:var(--ac-red)">~0.4MB</td></tr>
+      </table>
+      <div class="highlight hl-red">
+        <strong>Trade-off:</strong> vocab이 작으면 같은 텍스트를 표현하는 데 더 많은 token이 필요해요.
+        "transformer"라는 단어가 vocab=100K에서는 1 token이지만, vocab=1024에서는 여러 token으로 쪼개져요.
+        이 프로젝트에서는 seq_len=1024로 고정해서 관리해요.
+      </div>
+    </div>
+  </div>
+
+  <div class="concept" onclick="this.classList.add('open')">
+    <div class="concept-head">
+      <span class="arrow">&#9654;</span>
+      <span class="num">2</span>
+      <h3>Tied Embedding: 하나의 행렬로 두 가지 역할</h3>
+      <span class="brief">input &amp; output 공유</span>
+    </div>
+    <div class="concept-body">
+      <p>
+        보통 language model에는 두 개의 큰 행렬이 있어요.
+        하나는 token ID를 vector로 바꾸는 <strong>input embedding</strong>이고,
+        다른 하나는 vector를 다시 vocab 크기의 확률 분포로 바꾸는 <strong>output head</strong>에요.
+        Tied embedding은 이 두 행렬을 동일한 weight로 공유하는 기법이에요.
+      </p>
+      <div class="dia">
+        <svg viewBox="0 0 700 125">
+          <rect x="230" y="5" width="240" height="40" rx="8" fill="#e8e8e8"/>
+          <text x="350" y="24" text-anchor="middle" fill="#0a0a0a" font-size="12" font-weight="700">Embedding Matrix W</text>
+          <text x="350" y="40" text-anchor="middle" fill="#505050" font-size="9">(1024, 512) &mdash; single shared matrix</text>
+
+          <line x1="280" y1="48" x2="160" y2="72" stroke="#505050" stroke-width="1" marker-end="url(#a1d)"/>
+          <line x1="420" y1="48" x2="540" y2="72" stroke="#505050" stroke-width="1" marker-end="url(#a1d)"/>
+
+          <rect x="30" y="76" width="250" height="38" rx="8" fill="var(--card)" stroke="var(--border)" stroke-width="1"/>
+          <text x="155" y="93" text-anchor="middle" fill="#b0b0b0" font-size="11" font-weight="600">Input: token ID &rarr; vector</text>
+          <text x="155" y="107" text-anchor="middle" fill="#505050" font-size="9" font-family="'Google Sans Code',monospace">x = W[token_id]</text>
+
+          <rect x="420" y="76" width="250" height="38" rx="8" fill="var(--card)" stroke="var(--border)" stroke-width="1"/>
+          <text x="545" y="93" text-anchor="middle" fill="#b0b0b0" font-size="11" font-weight="600">Output: vector &rarr; logits</text>
+          <text x="545" y="107" text-anchor="middle" fill="#505050" font-size="9" font-family="'Google Sans Code',monospace">logits = x @ W.T</text>
+        </svg>
+      </div>
+      <p>
+        이렇게 하면 parameter 수를 절반으로 줄이면서도, input과 output의 token 표현이 일관되도록 강제해요.
+      </p>
+    </div>
+  </div>
+
+  <div class="concept" onclick="this.classList.add('open')">
+    <div class="concept-head">
+      <span class="arrow">&#9654;</span>
+      <span class="num">3</span>
+      <h3>bits-per-byte: tokenizer에 독립적인 평가 지표</h3>
+      <span class="brief">공정한 비교의 핵심</span>
+    </div>
+    <div class="concept-body">
+      <p>
+        다른 vocab 크기의 모델을 어떻게 공정하게 비교할까요? 이 프로젝트는 <strong>bits-per-byte</strong>를 사용해요.
+        모델이 텍스트를 얼마나 잘 "압축"하는지를 원본 텍스트의 byte당 필요한 bit 수로 측정하는 것이에요.
+      </p>
+      <div class="codeblock">
+<span class="cm"># bits-per-byte 계산 과정</span>
+loss_in_nats = <span class="num">2.35</span>
+bits_per_token = loss_in_nats / <span class="bi">ln</span>(<span class="num">2</span>)       <span class="cm"># = 3.39</span>
+tokens_per_byte = total_tokens / total_bytes
+bits_per_byte = bits_per_token <span class="op">*</span> tokens_per_byte</div>
+    </div>
+  </div>
+
+  <div class="concept" onclick="this.classList.add('open')">
+    <div class="concept-head">
+      <span class="arrow">&#9654;</span>
+      <span class="num">4</span>
+      <h3>실제 코드: SentencePiece Lookup Table 구축</h3>
+      <span class="brief">train_gpt.py lines 187-211</span>
+    </div>
+    <div class="concept-body">
+      <p>
+        <code>build_sentencepiece_luts</code> 함수는 세 개의 lookup table을 만들어요.
+      </p>
+      <div class="codeblock">
+<span class="kw">def</span> <span class="fn">build_sentencepiece_luts</span>(sp, vocab_size, device):
+    <span class="kw">for</span> token_id <span class="kw">in</span> <span class="bi">range</span>(sp_vocab_size):
+        <span class="kw">if</span> sp.<span class="aq">is_control</span>(token_id):  <span class="cm"># BOS, EOS 등 skip</span>
+            <span class="kw">continue</span>
+        <span class="kw">if</span> sp.<span class="aq">is_byte</span>(token_id):
+            base_bytes[token_id] = <span class="num">1</span>
+            <span class="kw">continue</span>
+
+        piece = sp.<span class="aq">id_to_piece</span>(token_id)  <span class="cm"># e.g. "▁the"</span>
+        <span class="kw">if</span> piece.<span class="aq">startswith</span>(<span class="str">"▁"</span>):
+            has_leading_space[token_id] = <span class="kw">True</span>
+            piece = piece[<span class="num">1</span>:]
+        base_bytes[token_id] = <span class="bi">len</span>(piece.<span class="aq">encode</span>(<span class="str">"utf-8"</span>))</div>
+      <table class="tbl">
+        <tr><th>Lookup Table</th><th>역할</th><th>예시</th></tr>
+        <tr><td><code>base_bytes_lut</code></td><td>각 token의 UTF-8 byte 수</td><td>"the" = 3 bytes</td></tr>
+        <tr><td><code>has_leading_space_lut</code></td><td>앞에 공백이 붙는 token인지</td><td>"&#9601;the" = True</td></tr>
+        <tr><td><code>is_boundary_token_lut</code></td><td>문서 경계 token인지</td><td>BOS = True</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="quiz">
+    <h4>Check Your Understanding</h4>
+    <p>이 프로젝트에서 tied embedding을 사용하는 주된 이유는 무엇일까요?</p>
+    <button class="quiz-opt" onclick="checkQuiz(this,'wrong','q2')">A. 학습 속도를 높이기 위해</button>
+    <button class="quiz-opt" onclick="checkQuiz(this,'correct','q2')">B. parameter 수를 줄여서 16MB 제한에 맞추기 위해</button>
+    <button class="quiz-opt" onclick="checkQuiz(this,'wrong','q2')">C. 다국어를 지원하기 위해</button>
+    <button class="quiz-opt" onclick="checkQuiz(this,'wrong','q2')">D. gradient vanishing을 방지하기 위해</button>
+    <div class="quiz-explain" id="q2">
+      Tied embedding은 input embedding과 output head가 같은 weight를 공유해서 parameter 수를 절반으로 줄여요.
+      16MB 제한이 있는 이 프로젝트에서 모든 parameter를 아끼는 것이 중요해요.
+    </div>
+  </div>
+
+  <button class="next-ch" onclick="go(2)">Chapter 3: Binary Shard와 Data Loading &rarr;</button>
+</div>
+
+<!-- ====== CHAPTER 3 ====== -->
+<div class="chapter" id="ch2">
+  <div class="intro-box">
+    <span class="tag tag-ch">Chapter 3</span>
+    <span class="tag tag-topic">Data</span>
+    <h2>Binary Shard와 Data Loading</h2>
+    <p>
+      Tokenizer가 텍스트를 숫자로 변환한 결과물이 binary shard 파일이에요.
+      학습 시에는 이 파일들을 효율적으로 읽어서 모델에 공급해야 해요.
+      이 챕터에서는 데이터가 디스크에서 GPU까지 어떻게 흘러가는지 추적해요.
+    </p>
+  </div>
+
+  <div class="concept" onclick="this.classList.add('open')">
+    <div class="concept-head">
+      <span class="arrow">&#9654;</span>
+      <span class="num">1</span>
+      <h3>Binary Shard File 구조</h3>
+      <span class="brief">.bin 파일 내부</span>
+    </div>
+    <div class="concept-body">
+      <div class="dia">
+        <svg viewBox="0 0 700 75">
+          <rect x="10" y="8" width="680" height="56" rx="10" fill="none" stroke="#505050" stroke-width="1"/>
+          <rect x="15" y="13" width="200" height="46" rx="6" fill="#e8e8e8"/>
+          <text x="115" y="32" text-anchor="middle" fill="#0a0a0a" font-size="10" font-weight="700">HEADER (1024 bytes)</text>
+          <text x="115" y="49" text-anchor="middle" fill="#505050" font-size="8.5">[0]=20240520  [1]=1  [2]=token_count</text>
+          <rect x="220" y="13" width="465" height="46" rx="6" fill="var(--card)" stroke="var(--border)" stroke-width="1"/>
+          <text x="452" y="32" text-anchor="middle" fill="#b0b0b0" font-size="10" font-weight="600">TOKEN DATA (uint16 array)</text>
+          <text x="452" y="49" text-anchor="middle" fill="#505050" font-size="8.5">t0  t1  t2  t3  ...  t_{N-1}  &mdash;  each 2 bytes</text>
+        </svg>
+      </div>
+      <div class="codeblock">
+<span class="kw">def</span> <span class="fn">load_data_shard</span>(file):
+    header = np.<span class="aq">fromfile</span>(file, dtype=<span class="str">"&lt;i4"</span>, count=<span class="num">256</span>)
+    <span class="kw">assert</span> header[<span class="num">0</span>] == <span class="num">20240520</span> <span class="kw">and</span> header[<span class="num">1</span>] == <span class="num">1</span>
+    num_tokens = header[<span class="num">2</span>]
+    tokens = np.<span class="aq">fromfile</span>(file, dtype=<span class="str">"&lt;u2"</span>,
+                         count=num_tokens, offset=<span class="num">1024</span>)
+    <span class="kw">return</span> torch.<span class="aq">from_numpy</span>(tokens)</div>
+    </div>
+  </div>
+
+  <div class="concept" onclick="this.classList.add('open')">
+    <div class="concept-head">
+      <span class="arrow">&#9654;</span>
+      <span class="num">2</span>
+      <h3>TokenStream: 끝없는 데이터 흐름</h3>
+      <span class="brief">sequential read + auto-wrap</span>
+    </div>
+    <div class="concept-body">
+      <div class="analogy">
+        <p>
+          여러 권의 책이 선반에 꽂혀 있다고 상상해 보세요. TokenStream은 첫 번째 책부터 읽기 시작해서
+          끝까지 읽으면 자동으로 다음 책으로 넘어가고, 마지막 책까지 다 읽으면 다시 첫 번째 책으로
+          돌아가서 끝없이 읽어나가는 독서 로봇이에요.
+        </p>
+      </div>
+      <div class="codeblock">
+<span class="kw">class</span> <span class="fn">TokenStream</span>:
+    <span class="kw">def</span> <span class="fn">take</span>(self, n):
+        chunks = []
+        remaining = n
+        <span class="kw">while</span> remaining > <span class="num">0</span>:
+            avail = self.tokens.<span class="aq">numel</span>() - self.pos
+            <span class="kw">if</span> avail <= <span class="num">0</span>:
+                self.<span class="aq">_advance_file</span>()  <span class="cm"># 다음 shard</span>
+                <span class="kw">continue</span>
+            k = <span class="bi">min</span>(remaining, avail)
+            chunks.<span class="aq">append</span>(self.tokens[self.pos : self.pos + k])
+            self.pos += k
+            remaining -= k
+        <span class="kw">return</span> torch.<span class="aq">cat</span>(chunks)</div>
+      <p>
+        이 설계는 <strong>deterministic</strong>해요. random shuffle이 없어서 같은 seed로 시작하면 항상 같은 순서로 읽혀요.
+      </p>
+    </div>
+  </div>
+
+  <div class="concept" onclick="this.classList.add('open')">
+    <div class="concept-head">
+      <span class="arrow">&#9654;</span>
+      <span class="num">3</span>
+      <h3>DistributedTokenLoader: GPU별 데이터 분배</h3>
+      <span class="brief">8 GPU에 데이터 나누기</span>
+    </div>
+    <div class="concept-body">
+      <div class="dia">
+        <svg viewBox="0 0 700 100">
+          <text x="10" y="14" fill="#505050" font-size="9" font-weight="500" letter-spacing=".04em">GLOBAL TOKEN CHUNK</text>
+          <rect x="10" y="22" width="680" height="28" rx="6" fill="none" stroke="#505050" stroke-width="1"/>
+          <rect x="12" y="24" width="165" height="24" rx="4" fill="#e8e8e8"/>
+          <text x="94" y="40" text-anchor="middle" fill="#0a0a0a" font-size="9" font-weight="600">Rank 0</text>
+          <rect x="182" y="24" width="165" height="24" rx="4" fill="#787878"/>
+          <text x="264" y="40" text-anchor="middle" fill="#e8e8e8" font-size="9" font-weight="500">Rank 1</text>
+          <rect x="352" y="24" width="165" height="24" rx="4" fill="#505050"/>
+          <text x="434" y="40" text-anchor="middle" fill="#e8e8e8" font-size="9" font-weight="500">Rank 2</text>
+          <rect x="522" y="24" width="165" height="24" rx="4" fill="#333333"/>
+          <text x="604" y="40" text-anchor="middle" fill="#b0b0b0" font-size="9" font-weight="500">Rank 3</text>
+
+          <text x="350" y="72" text-anchor="middle" fill="#505050" font-size="10">각 rank가 독립적으로 <tspan fill="#b0b0b0" font-family="'Google Sans Code',monospace" font-size="10">x = local[:-1], y = local[1:]</tspan> 구성</text>
+          <text x="350" y="90" text-anchor="middle" fill="#505050" font-size="9">per_rank_span = local_tokens + 1 &mdash; shift를 위한 여분 1 token</text>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <div class="concept" onclick="this.classList.add('open')">
+    <div class="concept-head">
+      <span class="arrow">&#9654;</span>
+      <span class="num">4</span>
+      <h3>Next-Token Prediction: 언어 모델의 학습 목표</h3>
+      <span class="brief">가장 기본적인 원리</span>
+    </div>
+    <div class="concept-body">
+      <div class="dia">
+        <svg viewBox="0 0 700 105">
+          <defs><marker id="a4" markerWidth="6" markerHeight="5" refX="6" refY="2.5" orient="auto"><polygon points="0 0,6 2.5,0 5" fill="#505050"/></marker></defs>
+          <text x="50" y="16" fill="#b0b0b0" font-size="10" font-weight="600" letter-spacing=".02em">INPUT x</text>
+          <text x="50" y="82" fill="#b0b0b0" font-size="10" font-weight="600" letter-spacing=".02em">TARGET y</text>
+
+          <rect x="120" y="3" width="65" height="28" rx="6" fill="#e8e8e8"/>
+          <text x="152" y="21" text-anchor="middle" fill="#0a0a0a" font-size="12" font-weight="700">The</text>
+          <rect x="200" y="3" width="65" height="28" rx="6" fill="#b0b0b0"/>
+          <text x="232" y="21" text-anchor="middle" fill="#0a0a0a" font-size="12" font-weight="600">cat</text>
+          <rect x="280" y="3" width="65" height="28" rx="6" fill="#787878"/>
+          <text x="312" y="21" text-anchor="middle" fill="#e8e8e8" font-size="12" font-weight="600">sat</text>
+          <rect x="360" y="3" width="65" height="28" rx="6" fill="#505050"/>
+          <text x="392" y="21" text-anchor="middle" fill="#e8e8e8" font-size="12" font-weight="600">on</text>
+
+          <line x1="152" y1="33" x2="232" y2="60" stroke="#505050" stroke-width="1" marker-end="url(#a4)"/>
+          <line x1="232" y1="33" x2="312" y2="60" stroke="#505050" stroke-width="1" marker-end="url(#a4)"/>
+          <line x1="312" y1="33" x2="392" y2="60" stroke="#505050" stroke-width="1" marker-end="url(#a4)"/>
+          <line x1="392" y1="33" x2="472" y2="60" stroke="#505050" stroke-width="1" marker-end="url(#a4)"/>
+          <text x="190" y="50" fill="#505050" font-size="8">predict</text>
+
+          <rect x="200" y="63" width="65" height="28" rx="6" fill="none" stroke="#b0b0b0" stroke-width="1.2"/>
+          <text x="232" y="81" text-anchor="middle" fill="#b0b0b0" font-size="12" font-weight="600">cat</text>
+          <rect x="280" y="63" width="65" height="28" rx="6" fill="none" stroke="#787878" stroke-width="1.2"/>
+          <text x="312" y="81" text-anchor="middle" fill="#787878" font-size="12" font-weight="600">sat</text>
+          <rect x="360" y="63" width="65" height="28" rx="6" fill="none" stroke="#505050" stroke-width="1.2"/>
+          <text x="392" y="81" text-anchor="middle" fill="#505050" font-size="12" font-weight="600">on</text>
+          <rect x="440" y="63" width="65" height="28" rx="6" fill="none" stroke="#333333" stroke-width="1.2"/>
+          <text x="472" y="81" text-anchor="middle" fill="#505050" font-size="12" font-weight="600">the</text>
+
+          <text x="350" y="105" text-anchor="middle" fill="#505050" font-size="9.5">모든 위치에서 동시에 다음 token을 예측 = 효율적인 학습</text>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <div class="quiz">
+    <h4>Check Your Understanding</h4>
+    <p>DistributedTokenLoader에서 per_rank_span이 local_tokens + 1인 이유는?</p>
+    <button class="quiz-opt" onclick="checkQuiz(this,'wrong','q3')">A. padding을 위해</button>
+    <button class="quiz-opt" onclick="checkQuiz(this,'wrong','q3')">B. BOS token을 추가하기 위해</button>
+    <button class="quiz-opt" onclick="checkQuiz(this,'correct','q3')">C. x와 y를 한 칸 shift해서 만들 때 여분이 필요하므로</button>
+    <button class="quiz-opt" onclick="checkQuiz(this,'wrong','q3')">D. GPU 메모리 alignment를 위해</button>
+    <div class="quiz-explain" id="q3">
+      N개의 연속 token에서 x = tokens[:-1], y = tokens[1:]로 만들면 N-1쌍의 input-target이 생겨요.
+      local_tokens개의 학습 쌍을 만들려면 local_tokens + 1개의 token이 필요해요.
+    </div>
+  </div>
+
+  <button class="next-ch" onclick="go(3)">Chapter 4: Embedding &mdash; 숫자에서 의미로 &rarr;</button>
+</div>
+
+<!-- ====== CHAPTER 4 ====== -->
+<div class="chapter" id="ch3">
+  <div class="intro-box">
+    <span class="tag tag-ch">Chapter 4</span>
+    <span class="tag tag-topic">Model</span>
+    <h2>Embedding: 숫자에서 의미로</h2>
+    <p>
+      Token ID는 단순한 정수에요. 42번 token이 43번보다 "크다"는 수학적 의미는 없어요.
+      Embedding은 이 이산적인 ID를 <strong>연속적인 고차원 벡터</strong>로 변환해서
+      신경망이 의미를 학습할 수 있는 공간으로 옮겨주는 과정이에요.
+    </p>
+  </div>
+
+  <div class="concept" onclick="this.classList.add('open')">
+    <div class="concept-head">
+      <span class="arrow">&#9654;</span>
+      <span class="num">1</span>
+      <h3>Embedding이란: Lookup Table</h3>
+      <span class="brief">행렬의 행을 꺼내는 것</span>
+    </div>
+    <div class="concept-body">
+      <p>
+        Embedding은 본질적으로 <strong>큰 행렬에서 해당 행을 꺼내는 것</strong>이에요.
+        Token ID가 42이면, 1024x512 행렬의 42번째 행이 그 token의 벡터 표현이에요.
+      </p>
+      <div class="dia">
+        <svg viewBox="0 0 700 135">
+          <rect x="10" y="42" width="85" height="44" rx="8" fill="#e8e8e8"/>
+          <text x="52" y="62" text-anchor="middle" fill="#0a0a0a" font-size="14" font-weight="700">ID=42</text>
+          <text x="52" y="78" text-anchor="middle" fill="#505050" font-size="8">token ID</text>
+
+          <line x1="100" y1="64" x2="138" y2="64" stroke="#787878" stroke-width="1" marker-end="url(#a1d)"/>
+
+          <rect x="143" y="2" width="240" height="130" rx="10" fill="var(--card)" stroke="#505050" stroke-width="1"/>
+          <text x="263" y="19" text-anchor="middle" fill="#b0b0b0" font-size="10" font-weight="700" letter-spacing=".02em">EMBEDDING MATRIX</text>
+          <text x="158" y="39" fill="#333333" font-size="9">Row 0:  [0.12, -0.34, ...]</text>
+          <text x="158" y="53" fill="#333333" font-size="9">Row 1:  [0.78, 0.23, ...]</text>
+          <text x="158" y="67" fill="#333333" font-size="9">...</text>
+          <rect x="148" y="71" width="230" height="18" rx="3" fill="#e8e8e8"/>
+          <text x="158" y="84" fill="#0a0a0a" font-size="9" font-weight="600">Row 42: [0.45, -0.67, 0.89, ...]</text>
+          <text x="158" y="100" fill="#333333" font-size="9">...</text>
+          <text x="158" y="114" fill="#333333" font-size="9">Row 1023: [-0.22, 0.15, ...]</text>
+
+          <line x1="388" y1="80" x2="425" y2="80" stroke="#787878" stroke-width="1" marker-end="url(#a1d)"/>
+
+          <rect x="430" y="52" width="255" height="44" rx="8" fill="var(--card)" stroke="#505050" stroke-width="1"/>
+          <text x="557" y="72" text-anchor="middle" fill="#e8e8e8" font-size="11" font-weight="600">[0.45, -0.67, 0.89, ..., 0.12]</text>
+          <text x="557" y="89" text-anchor="middle" fill="#505050" font-size="9">512-dimensional vector</text>
+        </svg>
+      </div>
+      <div class="codeblock">
+self.tok_emb = nn.<span class="fn">Embedding</span>(<span class="num">1024</span>, <span class="num">512</span>)
+
+x = self.tok_emb(input_ids)           <span class="cm"># (batch, seq_len) → (batch, seq_len, 512)</span>
+x = F.<span class="aq">rms_norm</span>(x, (x.<span class="aq">size</span>(-<span class="num">1</span>),))  <span class="cm"># normalize</span></div>
+    </div>
+  </div>
+
+  <div class="concept" onclick="this.classList.add('open')">
+    <div class="concept-head">
+      <span class="arrow">&#9654;</span>
+      <span class="num">2</span>
+      <h3>왜 512차원인가: 표현력과 크기의 균형</h3>
+      <span class="brief">model_dim 선택</span>
+    </div>
+    <div class="concept-body">
+      <p>
+        model_dim=512는 각 token을 512개의 숫자로 표현한다는 뜻이에요.
+        dim을 1024로 두 배 늘리면 parameter가 약 4배로 늘어서 16MB를 초과해요.
+      </p>
+      <div class="highlight hl-blue">
+        <strong>직관:</strong> 512차원은 "각 단어를 512가지 특성으로 설명하는 것"이에요.
+        "감정 극성", "격식 수준", "시제 관련성" 같은 추상적인 축이 512개 있다고 생각할 수 있어요.
+        실제 축의 의미는 모델이 스스로 학습해요.
+      </div>
+    </div>
+  </div>
+
+  <div class="concept" onclick="this.classList.add('open')">
+    <div class="concept-head">
+      <span class="arrow">&#9654;</span>
+      <span class="num">3</span>
+      <h3>Embedding 이후: Residual Stream의 시작</h3>
+      <span class="brief">transformer의 정보 고속도로</span>
+    </div>
+    <div class="concept-body">
+      <div class="analogy">
+        <p>
+          편지에 여러 사람이 메모를 붙이는 상황과 비슷해요. 원본 편지를 수정하지 않고, 각 사람이
+          자기의 해석이나 주석을 포스트잇으로 덧붙여요. 9개 block이 순서대로 자신의 "해석"을 추가하고,
+          마지막에 이 모든 정보가 합쳐진 상태에서 다음 token을 예측해요.
+        </p>
+      </div>
+      <div class="codeblock">
+x = self.tok_emb(input_ids)
+x = F.<span class="aq">rms_norm</span>(x, (x.<span class="aq">size</span>(-<span class="num">1</span>),))
+x0 = x  <span class="cm"># 원본 보존 (resid_mix에서 참조)</span>
+
+<span class="kw">for</span> block <span class="kw">in</span> self.blocks:
+    x = block(x, x0)  <span class="cm"># 내부에서 residual add</span>
+
+x = self.<span class="aq">final_norm</span>(x)
+logits = F.<span class="aq">linear</span>(x, self.tok_emb.weight)  <span class="cm"># tied head</span></div>
+    </div>
+  </div>
+
+  <button class="next-ch" onclick="go(4)">Chapter 5: Attention &mdash; 문맥 이해하기 &rarr;</button>
+</div>
+
+<!-- ====== CHAPTER 5 ====== -->
+<div class="chapter" id="ch4">
+  <div class="intro-box">
+    <span class="tag tag-ch">Chapter 5</span>
+    <span class="tag tag-topic">Core Mechanism</span>
+    <h2>Attention: 문맥을 이해하는 메커니즘</h2>
+    <p>
+      같은 단어도 문맥에 따라 의미가 달라져요. Attention은 각 token이
+      <strong>주변 token들을 참조</strong>해서 자신의 표현을 문맥에 맞게 조정하는 메커니즘이에요.
+    </p>
+  </div>
+
+  <div class="concept" onclick="this.classList.add('open')">
+    <div class="concept-head">
+      <span class="arrow">&#9654;</span>
+      <span class="num">1</span>
+      <h3>Query, Key, Value: 정보 검색의 비유</h3>
+      <span class="brief">attention의 세 가지 요소</span>
+    </div>
+    <div class="concept-body">
+      <div class="analogy">
+        <p>
+          도서관 검색에 비유할 수 있어요. <strong>Query</strong>는 "나는 이런 정보를 찾고 있어요"라는 질문이에요.
+          <strong>Key</strong>는 각 책의 색인 카드로, "나는 이런 내용을 갖고 있어요"라는 정보에요.
+          <strong>Value</strong>는 실제 책의 내용이에요. Query와 Key가 잘 맞는 책을 찾으면, 그 책의 Value를 가져오는 것이에요.
+        </p>
+      </div>
+      <div class="codeblock">
+q = self.<span class="aq">c_q</span>(x)    <span class="cm"># Query: "나는 무엇을 찾는가"</span>
+k = self.<span class="aq">c_k</span>(x)    <span class="cm"># Key: "나는 무엇을 가졌는가"</span>
+v = self.<span class="aq">c_v</span>(x)    <span class="cm"># Value: "나의 실제 정보"</span>
+
+<span class="cm"># Q와 K의 dot product → attention score</span>
+<span class="cm"># score가 높은 위치의 V를 더 많이 참조</span></div>
+    </div>
+  </div>
+
+  <div class="concept" onclick="this.classList.add('open')">
+    <div class="concept-head">
+      <span class="arrow">&#9654;</span>
+      <span class="num">2</span>
+      <h3>Multi-Head &amp; Group Query Attention</h3>
+      <span class="brief">여러 관점, 효율적으로</span>
+    </div>
+    <div class="concept-body">
+      <p>
+        512차원 벡터를 8개의 head로 나눠요. 각 head는 64차원 공간에서 독립적으로 attention을 수행해요.
+        GQA를 적용해서 Query head 8개가 KV head 4개를 공유해요.
+      </p>
+      <div class="dia">
+        <svg viewBox="0 0 700 100">
+          <text x="10" y="14" fill="#505050" font-size="9" font-weight="500" letter-spacing=".04em">QUERY HEADS (8)</text>
+          <rect x="10" y="20" width="70" height="24" rx="5" fill="#e8e8e8"/>
+          <text x="45" y="36" text-anchor="middle" fill="#0a0a0a" font-size="9" font-weight="600">Q0</text>
+          <rect x="85" y="20" width="70" height="24" rx="5" fill="#b0b0b0"/>
+          <text x="120" y="36" text-anchor="middle" fill="#0a0a0a" font-size="9">Q1</text>
+
+          <rect x="175" y="20" width="70" height="24" rx="5" fill="#e8e8e8"/>
+          <text x="210" y="36" text-anchor="middle" fill="#0a0a0a" font-size="9" font-weight="600">Q2</text>
+          <rect x="250" y="20" width="70" height="24" rx="5" fill="#b0b0b0"/>
+          <text x="285" y="36" text-anchor="middle" fill="#0a0a0a" font-size="9">Q3</text>
+
+          <rect x="340" y="20" width="70" height="24" rx="5" fill="#e8e8e8"/>
+          <text x="375" y="36" text-anchor="middle" fill="#0a0a0a" font-size="9" font-weight="600">Q4</text>
+          <rect x="415" y="20" width="70" height="24" rx="5" fill="#b0b0b0"/>
+          <text x="450" y="36" text-anchor="middle" fill="#0a0a0a" font-size="9">Q5</text>
+
+          <rect x="505" y="20" width="70" height="24" rx="5" fill="#e8e8e8"/>
+          <text x="540" y="36" text-anchor="middle" fill="#0a0a0a" font-size="9" font-weight="600">Q6</text>
+          <rect x="580" y="20" width="70" height="24" rx="5" fill="#b0b0b0"/>
+          <text x="615" y="36" text-anchor="middle" fill="#0a0a0a" font-size="9">Q7</text>
+
+          <line x1="45" y1="46" x2="82" y2="62" stroke="#505050" stroke-width=".7"/>
+          <line x1="120" y1="46" x2="82" y2="62" stroke="#505050" stroke-width=".7"/>
+          <line x1="210" y1="46" x2="247" y2="62" stroke="#505050" stroke-width=".7"/>
+          <line x1="285" y1="46" x2="247" y2="62" stroke="#505050" stroke-width=".7"/>
+          <line x1="375" y1="46" x2="412" y2="62" stroke="#505050" stroke-width=".7"/>
+          <line x1="450" y1="46" x2="412" y2="62" stroke="#505050" stroke-width=".7"/>
+          <line x1="540" y1="46" x2="577" y2="62" stroke="#505050" stroke-width=".7"/>
+          <line x1="615" y1="46" x2="577" y2="62" stroke="#505050" stroke-width=".7"/>
+
+          <text x="10" y="76" fill="#505050" font-size="9" font-weight="500" letter-spacing=".04em">KV HEADS (4)</text>
+          <rect x="10" y="80" width="145" height="18" rx="4" fill="none" stroke="#505050" stroke-width="1"/>
+          <text x="82" y="93" text-anchor="middle" fill="#787878" font-size="9">KV Head 0</text>
+          <rect x="175" y="80" width="145" height="18" rx="4" fill="none" stroke="#505050" stroke-width="1"/>
+          <text x="247" y="93" text-anchor="middle" fill="#787878" font-size="9">KV Head 1</text>
+          <rect x="340" y="80" width="145" height="18" rx="4" fill="none" stroke="#505050" stroke-width="1"/>
+          <text x="412" y="93" text-anchor="middle" fill="#787878" font-size="9">KV Head 2</text>
+          <rect x="505" y="80" width="145" height="18" rx="4" fill="none" stroke="#505050" stroke-width="1"/>
+          <text x="577" y="93" text-anchor="middle" fill="#787878" font-size="9">KV Head 3</text>
+        </svg>
+      </div>
+      <p>
+        KV projection의 output dim이 512에서 256으로 줄어서 parameter 50%를 절감하면서도 성능 저하는 거의 없어요.
+      </p>
+    </div>
+  </div>
+
+  <div class="concept" onclick="this.classList.add('open')">
+    <div class="concept-head">
+      <span class="arrow">&#9654;</span>
+      <span class="num">3</span>
+      <h3>RoPE: 위치 정보 주입</h3>
+      <span class="brief">어디에 있는지 알려주기</span>
+    </div>
+    <div class="concept-body">
+      <p>
+        Attention 자체는 token의 순서를 모르는에요. RoPE: Rotary Position Embedding은
+        Q와 K 벡터를 position에 따라 다른 각도로 회전시켜서 상대적 거리를 attention score에 반영해요.
+      </p>
+      <div class="codeblock">
+<span class="kw">def</span> <span class="fn">apply_rotary_emb</span>(x, cos, sin):
+    half = x.<span class="aq">size</span>(-<span class="num">1</span>) // <span class="num">2</span>
+    x1, x2 = x[..., :half], x[..., half:]
+    <span class="kw">return</span> torch.<span class="aq">cat</span>(
+        (x1 <span class="op">*</span> cos <span class="op">+</span> x2 <span class="op">*</span> sin,
+         x1 <span class="op">*</span> (<span class="op">-</span>sin) <span class="op">+</span> x2 <span class="op">*</span> cos), dim=<span class="op">-</span><span class="num">1</span>)</div>
+    </div>
+  </div>
+
+  <div class="concept" onclick="this.classList.add('open')">
+    <div class="concept-head">
+      <span class="arrow">&#9654;</span>
+      <span class="num">4</span>
+      <h3>Causal Mask: 미래를 보지 못하게 하기</h3>
+      <span class="brief">autoregressive의 핵심 제약</span>
+    </div>
+    <div class="concept-body">
+      <p>
+        Language model은 왼쪽에서 오른쪽으로 생성해요.
+        Causal mask는 각 token이 자신과 이전 token만 참조할 수 있도록 제한해요.
+      </p>
+      <div class="dia">
+        <svg viewBox="0 0 700 150">
+          <text x="235" y="16" text-anchor="middle" fill="#e8e8e8" font-size="11" font-weight="700">Attention Score Matrix</text>
+          <text x="168" y="36" text-anchor="middle" fill="#505050" font-size="9">The</text>
+          <text x="218" y="36" text-anchor="middle" fill="#505050" font-size="9">cat</text>
+          <text x="268" y="36" text-anchor="middle" fill="#505050" font-size="9">sat</text>
+          <text x="318" y="36" text-anchor="middle" fill="#505050" font-size="9">on</text>
+
+          <text x="133" y="57" text-anchor="end" fill="#505050" font-size="9">The</text>
+          <rect x="145" y="42" width="45" height="22" rx="4" fill="#e8e8e8"/>
+          <text x="168" y="57" text-anchor="middle" fill="#0a0a0a" font-size="9">.8</text>
+          <rect x="195" y="42" width="45" height="22" rx="4" fill="#1a1a1a" stroke="#222" stroke-width=".5"/>
+          <text x="218" y="57" text-anchor="middle" fill="#333" font-size="9">&mdash;</text>
+          <rect x="245" y="42" width="45" height="22" rx="4" fill="#1a1a1a" stroke="#222" stroke-width=".5"/>
+          <text x="268" y="57" text-anchor="middle" fill="#333" font-size="9">&mdash;</text>
+          <rect x="295" y="42" width="45" height="22" rx="4" fill="#1a1a1a" stroke="#222" stroke-width=".5"/>
+          <text x="318" y="57" text-anchor="middle" fill="#333" font-size="9">&mdash;</text>
+
+          <text x="133" y="81" text-anchor="end" fill="#505050" font-size="9">cat</text>
+          <rect x="145" y="68" width="45" height="22" rx="4" fill="#787878"/>
+          <text x="168" y="83" text-anchor="middle" fill="#e8e8e8" font-size="9">.3</text>
+          <rect x="195" y="68" width="45" height="22" rx="4" fill="#e8e8e8"/>
+          <text x="218" y="83" text-anchor="middle" fill="#0a0a0a" font-size="9">.7</text>
+          <rect x="245" y="68" width="45" height="22" rx="4" fill="#1a1a1a" stroke="#222" stroke-width=".5"/>
+          <text x="268" y="83" text-anchor="middle" fill="#333" font-size="9">&mdash;</text>
+          <rect x="295" y="68" width="45" height="22" rx="4" fill="#1a1a1a" stroke="#222" stroke-width=".5"/>
+          <text x="318" y="83" text-anchor="middle" fill="#333" font-size="9">&mdash;</text>
+
+          <text x="133" y="107" text-anchor="end" fill="#505050" font-size="9">sat</text>
+          <rect x="145" y="94" width="45" height="22" rx="4" fill="#505050"/>
+          <text x="168" y="109" text-anchor="middle" fill="#e8e8e8" font-size="9">.1</text>
+          <rect x="195" y="94" width="45" height="22" rx="4" fill="#787878"/>
+          <text x="218" y="109" text-anchor="middle" fill="#e8e8e8" font-size="9">.5</text>
+          <rect x="245" y="94" width="45" height="22" rx="4" fill="#b0b0b0"/>
+          <text x="268" y="109" text-anchor="middle" fill="#0a0a0a" font-size="9">.4</text>
+          <rect x="295" y="94" width="45" height="22" rx="4" fill="#1a1a1a" stroke="#222" stroke-width=".5"/>
+          <text x="318" y="109" text-anchor="middle" fill="#333" font-size="9">&mdash;</text>
+
+          <text x="133" y="133" text-anchor="end" fill="#505050" font-size="9">on</text>
+          <rect x="145" y="120" width="45" height="22" rx="4" fill="#505050"/>
+          <text x="168" y="135" text-anchor="middle" fill="#e8e8e8" font-size="9">.1</text>
+          <rect x="195" y="120" width="45" height="22" rx="4" fill="#505050"/>
+          <text x="218" y="135" text-anchor="middle" fill="#e8e8e8" font-size="9">.2</text>
+          <rect x="245" y="120" width="45" height="22" rx="4" fill="#787878"/>
+          <text x="268" y="135" text-anchor="middle" fill="#e8e8e8" font-size="9">.3</text>
+          <rect x="295" y="120" width="45" height="22" rx="4" fill="#e8e8e8"/>
+          <text x="318" y="135" text-anchor="middle" fill="#0a0a0a" font-size="9">.4</text>
+
+          <!-- Legend -->
+          <rect x="410" y="50" width="14" height="14" rx="3" fill="#b0b0b0"/>
+          <text x="432" y="61" fill="#b0b0b0" font-size="9">attend 가능 (brighter = higher)</text>
+          <rect x="410" y="72" width="14" height="14" rx="3" fill="#1a1a1a" stroke="#222" stroke-width=".5"/>
+          <text x="432" y="83" fill="#505050" font-size="9">masked (미래 token)</text>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <div class="quiz">
+    <h4>Check Your Understanding</h4>
+    <p>GQA에서 Query head 8개, KV head 4개일 때, KV projection의 parameter 절감 비율은?</p>
+    <button class="quiz-opt" onclick="checkQuiz(this,'wrong','q4')">A. 25% 절감</button>
+    <button class="quiz-opt" onclick="checkQuiz(this,'correct','q4')">B. 50% 절감</button>
+    <button class="quiz-opt" onclick="checkQuiz(this,'wrong','q4')">C. 75% 절감</button>
+    <button class="quiz-opt" onclick="checkQuiz(this,'wrong','q4')">D. 절감 없음</button>
+    <div class="quiz-explain" id="q4">
+      Standard MHA에서 K, V projection은 각각 dim=512 output이에요. GQA에서 KV head를 4개로 줄이면
+      output이 4*64=256이 돼요. 512에서 256으로, 즉 50% 절감이에요.
+    </div>
+  </div>
+
+  <button class="next-ch" onclick="go(5)">Chapter 6: 전체 Transformer Block &rarr;</button>
+</div>
+
+<!-- ====== CHAPTER 6 ====== -->
+<div class="chapter" id="ch5">
+  <div class="intro-box">
+    <span class="tag tag-ch">Chapter 6</span>
+    <span class="tag tag-topic">Architecture</span>
+    <h2>전체 Transformer Block: 모든 것의 조립</h2>
+    <p>
+      지금까지 배운 요소들이 하나의 Block 안에서 어떻게 조립되는지 살펴봐요.
+      이 프로젝트의 Block은 standard transformer와 약간 다른 설계를 채택하고 있어서,
+      각 차이점의 의도를 함께 이해해요.
+    </p>
+  </div>
+
+  <div class="concept" onclick="this.classList.add('open')">
+    <div class="concept-head">
+      <span class="arrow">&#9654;</span>
+      <span class="num">1</span>
+      <h3>Block 구조 전체 흐름</h3>
+      <span class="brief">Norm &rarr; Attn &rarr; Norm &rarr; MLP</span>
+    </div>
+    <div class="concept-body">
+      <div class="codeblock">
+<span class="kw">class</span> <span class="fn">Block</span>(nn.Module):
+    <span class="kw">def</span> <span class="fn">forward</span>(self, x, x0):
+        <span class="cm"># 1. Residual mixing</span>
+        mix = self.resid_mix
+        x = mix[<span class="num">0</span>] <span class="op">*</span> x <span class="op">+</span> mix[<span class="num">1</span>] <span class="op">*</span> x0
+
+        <span class="cm"># 2. Attention sub-block</span>
+        n = self.<span class="aq">attn_norm</span>(x)
+        attn_out = self.<span class="aq">attn</span>(n)
+        x = x <span class="op">+</span> self.attn_scale <span class="op">*</span> attn_out
+
+        <span class="cm"># 3. MLP sub-block</span>
+        mlp_out = self.<span class="aq">mlp</span>(self.<span class="aq">mlp_norm</span>(x))
+        x = x <span class="op">+</span> self.mlp_scale <span class="op">*</span> mlp_out
+
+        <span class="kw">return</span> x</div>
+      <div class="dia">
+        <svg viewBox="0 0 700 255">
+          <defs><marker id="a6" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><polygon points="0 0,7 2.5,0 5" fill="#787878"/></marker></defs>
+
+          <rect x="220" y="5" width="260" height="28" rx="6" fill="var(--card)" stroke="#505050" stroke-width="1"/>
+          <text x="350" y="23" text-anchor="middle" fill="#b0b0b0" font-size="10" font-weight="500">x (residual stream) + x0 (original)</text>
+          <line x1="350" y1="35" x2="350" y2="50" stroke="#787878" stroke-width="1" marker-end="url(#a6)"/>
+
+          <rect x="280" y="53" width="140" height="22" rx="5" fill="var(--ac-purple-bg)" stroke="var(--ac-purple-dim)" stroke-width=".8"/>
+          <text x="350" y="68" text-anchor="middle" fill="var(--ac-purple)" font-size="9" font-weight="500">resid_mix: blend x, x0</text>
+          <line x1="350" y1="77" x2="350" y2="92" stroke="#787878" stroke-width="1" marker-end="url(#a6)"/>
+
+          <rect x="200" y="95" width="300" height="48" rx="8" fill="#e8e8e8"/>
+          <text x="350" y="114" text-anchor="middle" fill="#0a0a0a" font-size="11" font-weight="700">RMSNorm &rarr; CausalSelfAttention</text>
+          <text x="350" y="132" text-anchor="middle" fill="#505050" font-size="9">GQA + RoPE + Q/K Norm + q_gain</text>
+
+          <rect x="530" y="102" width="85" height="18" rx="4" fill="var(--ac-red-bg)" stroke="var(--ac-red-dim)" stroke-width=".8"/>
+          <text x="572" y="115" text-anchor="middle" fill="var(--ac-red)" font-size="8">&times; attn_scale</text>
+
+          <text x="350" y="160" text-anchor="middle" fill="#505050" font-size="9">+ residual</text>
+          <line x1="350" y1="166" x2="350" y2="180" stroke="#787878" stroke-width="1" marker-end="url(#a6)"/>
+
+          <rect x="200" y="183" width="300" height="48" rx="8" fill="#787878"/>
+          <text x="350" y="203" text-anchor="middle" fill="#e8e8e8" font-size="11" font-weight="600">RMSNorm &rarr; MLP (ReLU-squared)</text>
+          <text x="350" y="221" text-anchor="middle" fill="#b0b0b0" font-size="9">512 &rarr; 1024 &rarr; relu(x)^2 &rarr; 512</text>
+
+          <rect x="530" y="190" width="85" height="18" rx="4" fill="var(--ac-blue-bg)" stroke="var(--ac-blue-dim)" stroke-width=".8"/>
+          <text x="572" y="203" text-anchor="middle" fill="var(--ac-blue)" font-size="8">&times; mlp_scale</text>
+
+          <text x="350" y="248" text-anchor="middle" fill="#505050" font-size="9">+ residual</text>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <div class="concept" onclick="this.classList.add('open')">
+    <div class="concept-head">
+      <span class="arrow">&#9654;</span>
+      <span class="num">2</span>
+      <h3>RMSNorm &amp; MLP: ReLU-Squared</h3>
+      <span class="brief">안정화와 비선형 변환</span>
+    </div>
+    <div class="concept-body">
+      <p>
+        <strong>RMSNorm</strong>은 벡터의 RMS로 나눠서 크기를 일정하게 맞춰요.
+        <strong>MLP</strong>의 <code>relu(x)^2</code>는 sparse한 활성화를 만들어서
+        적은 parameter로 다양한 패턴을 학습할 수 있게 해요.
+      </p>
+    </div>
+  </div>
+
+  <div class="concept" onclick="this.classList.add('open')">
+    <div class="concept-head">
+      <span class="arrow">&#9654;</span>
+      <span class="num">3</span>
+      <h3>Learnable Scale &amp; Mix Parameters</h3>
+      <span class="brief">모델이 스스로 조절하는 dial</span>
+    </div>
+    <div class="concept-body">
+      <table class="tbl">
+        <tr><th>Parameter</th><th>Shape</th><th>역할</th><th>초기값</th></tr>
+        <tr><td><code>attn_scale</code></td><td>(512,)</td><td>attention 출력의 per-channel 크기</td><td>1.0</td></tr>
+        <tr><td><code>mlp_scale</code></td><td>(512,)</td><td>MLP 출력의 per-channel 크기</td><td>1.0</td></tr>
+        <tr><td><code>resid_mix</code></td><td>(2, 512)</td><td>현재 x와 원본 x0의 혼합 비율</td><td>[1, 0]</td></tr>
+        <tr><td><code>q_gain</code></td><td>(8,)</td><td>Query의 per-head scale</td><td>1.5</td></tr>
+        <tr><td><code>skip_weight</code></td><td>(4, 512)</td><td>U-Net skip connection 가중치</td><td>1.0</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="concept" onclick="this.classList.add('open')">
+    <div class="concept-head">
+      <span class="arrow">&#9654;</span>
+      <span class="num">4</span>
+      <h3>U-Net Skip Connection</h3>
+      <span class="brief">encoder-decoder 구조</span>
+    </div>
+    <div class="concept-body">
+      <div class="dia">
+        <svg viewBox="0 0 700 125">
+          <text x="350" y="14" text-anchor="middle" fill="#e8e8e8" font-size="10" font-weight="700" letter-spacing=".03em">9 LAYERS = 4 ENCODER + 5 DECODER</text>
+          <rect x="30" y="26" width="60" height="28" rx="6" fill="#e8e8e8"/>
+          <text x="60" y="44" text-anchor="middle" fill="#0a0a0a" font-size="9" font-weight="600">E0</text>
+          <rect x="105" y="26" width="60" height="28" rx="6" fill="#b0b0b0"/>
+          <text x="135" y="44" text-anchor="middle" fill="#0a0a0a" font-size="9">E1</text>
+          <rect x="180" y="26" width="60" height="28" rx="6" fill="#787878"/>
+          <text x="210" y="44" text-anchor="middle" fill="#e8e8e8" font-size="9">E2</text>
+          <rect x="255" y="26" width="60" height="28" rx="6" fill="#505050"/>
+          <text x="285" y="44" text-anchor="middle" fill="#e8e8e8" font-size="9">E3</text>
+
+          <line x1="92" y1="40" x2="103" y2="40" stroke="#505050" stroke-width=".8"/>
+          <line x1="167" y1="40" x2="178" y2="40" stroke="#505050" stroke-width=".8"/>
+          <line x1="242" y1="40" x2="253" y2="40" stroke="#505050" stroke-width=".8"/>
+          <line x1="317" y1="40" x2="360" y2="40" stroke="#505050" stroke-width=".8"/>
+
+          <rect x="362" y="26" width="60" height="28" rx="6" fill="none" stroke="#505050" stroke-width="1.2"/>
+          <text x="392" y="44" text-anchor="middle" fill="#787878" font-size="9">D0</text>
+          <rect x="437" y="26" width="60" height="28" rx="6" fill="none" stroke="#787878" stroke-width="1.2"/>
+          <text x="467" y="44" text-anchor="middle" fill="#787878" font-size="9">D1</text>
+          <rect x="512" y="26" width="60" height="28" rx="6" fill="none" stroke="#b0b0b0" stroke-width="1.2"/>
+          <text x="542" y="44" text-anchor="middle" fill="#b0b0b0" font-size="9">D2</text>
+          <rect x="587" y="26" width="60" height="28" rx="6" fill="none" stroke="#e8e8e8" stroke-width="1.2"/>
+          <text x="617" y="44" text-anchor="middle" fill="#e8e8e8" font-size="9">D3</text>
+
+          <line x1="424" y1="40" x2="435" y2="40" stroke="#505050" stroke-width=".8"/>
+          <line x1="499" y1="40" x2="510" y2="40" stroke="#505050" stroke-width=".8"/>
+          <line x1="574" y1="40" x2="585" y2="40" stroke="#505050" stroke-width=".8"/>
+
+          <path d="M285,56 C285,90 392,90 392,56" stroke="var(--ac-purple-dim)" stroke-width="1" fill="none" stroke-dasharray="4,3"/>
+          <path d="M210,56 C210,102 467,102 467,56" stroke="var(--ac-red-dim)" stroke-width="1" fill="none" stroke-dasharray="4,3"/>
+          <path d="M135,56 C135,112 542,112 542,56" stroke="var(--ac-blue-dim)" stroke-width="1" fill="none" stroke-dasharray="4,3"/>
+          <path d="M60,56 C60,122 617,122 617,56" stroke="#505050" stroke-width="1" fill="none" stroke-dasharray="4,3"/>
+          <text x="350" y="82" text-anchor="middle" fill="#505050" font-size="8">skip * weight</text>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <div class="concept" onclick="this.classList.add('open')">
+    <div class="concept-head">
+      <span class="arrow">&#9654;</span>
+      <span class="num">5</span>
+      <h3>최종 출력: Logits과 Cross-Entropy Loss</h3>
+      <span class="brief">예측에서 학습 신호까지</span>
+    </div>
+    <div class="concept-body">
+      <div class="codeblock">
+x = self.<span class="aq">final_norm</span>(x)
+logits = F.<span class="aq">linear</span>(x, self.tok_emb.weight)
+logits = <span class="num">30.0</span> <span class="op">*</span> torch.<span class="aq">tanh</span>(logits / <span class="num">30.0</span>)  <span class="cm"># softcap</span>
+
+loss = F.<span class="aq">cross_entropy</span>(
+    logits.<span class="aq">float</span>().<span class="aq">reshape</span>(<span class="op">-</span><span class="num">1</span>, <span class="num">1024</span>),
+    target_ids.<span class="aq">reshape</span>(<span class="op">-</span><span class="num">1</span>),
+    reduction=<span class="str">"mean"</span>)</div>
+      <p>
+        Cross-entropy loss는 "모델의 예측 확률 분포가 정답과 얼마나 다른지"를 측정해요.
+        이 loss를 줄이는 방향으로 모든 parameter가 조정되는 것이 학습의 전체 과정이에요.
+      </p>
+    </div>
+  </div>
+
+  <div class="quiz">
+    <h4>Final Check</h4>
+    <p>이 모델의 전체 데이터 흐름을 올바르게 나열한 것은?</p>
+    <button class="quiz-opt" onclick="checkQuiz(this,'wrong','q5')">A. Text &rarr; Attention &rarr; Embedding &rarr; MLP &rarr; Loss</button>
+    <button class="quiz-opt" onclick="checkQuiz(this,'correct','q5')">B. Token IDs &rarr; Embedding &rarr; [Norm &rarr; Attn + Norm &rarr; MLP] x9 &rarr; Norm &rarr; LM Head &rarr; Loss</button>
+    <button class="quiz-opt" onclick="checkQuiz(this,'wrong','q5')">C. Embedding &rarr; MLP &rarr; Attention &rarr; Norm &rarr; Loss</button>
+    <button class="quiz-opt" onclick="checkQuiz(this,'wrong','q5')">D. Text &rarr; BPE &rarr; Attention &rarr; Loss</button>
+    <div class="quiz-explain" id="q5">
+      Token IDs가 embedding을 거쳐 vector가 되고, 9개의 transformer block을 통과하면서
+      각 block에서 RMSNorm, Attention, RMSNorm, MLP를 거쳐요. 마지막에 final RMSNorm과 tied LM head를 통해
+      logits가 나오고, target과의 cross-entropy loss가 계산돼요.
+    </div>
+  </div>
+
+  <div class="highlight hl-purple" style="margin-top:32px">
+    <strong>여기까지 요약:</strong> 텍스트가 BPE tokenizer로 정수 ID가 되고, binary shard에 저장돼요.
+    학습 시 TokenStream이 순차적으로 읽고, 각 GPU에 분배돼요. Token ID는 embedding으로 512-dim vector가 되고,
+    9개 transformer block을 통과하면서 attention으로 문맥을 이해하고 MLP로 정보를 가공해요.
+    최종적으로 다음 token의 확률을 예측하고, cross-entropy loss로 학습 신호를 만들어요.
+    이 과정이 20,000번 반복되면서 모델이 점점 좋은 예측을 하게 돼요.
+  </div>
+
+  <button class="next-ch" onclick="go(6)">Chapter 7: Multi-Optimizer 전략 &rarr;</button>
+</div>
+
+<!-- ====== CHAPTER 7 ====== -->
+<div class="chapter" id="ch6">
+  <div class="intro-box">
+    <span class="tag tag-ch">Chapter 7</span>
+    <span class="tag tag-topic">Optimization</span>
+    <h2>Multi-Optimizer 전략: Muon과 Adam</h2>
+    <p>
+      일반적인 학습에서는 하나의 optimizer가 모든 parameter를 업데이트해요.
+      이 프로젝트는 <strong>parameter의 종류에 따라 서로 다른 optimizer를 사용</strong>하는 전략을 취해요.
+      2D matrix에는 Muon, embedding과 scalar에는 Adam을 쓰는 이유와 원리를 살펴볼게요.
+    </p>
+  </div>
+
+  <div class="concept" onclick="this.classList.add('open')">
+    <div class="concept-head">
+      <span class="arrow">&#9654;</span>
+      <span class="num">1</span>
+      <h3>왜 optimizer를 나누나요?</h3>
+      <span class="brief">parameter 특성 차이</span>
+    </div>
+    <div class="concept-body">
+      <p>
+        모델의 parameter는 크게 세 종류에요. <strong>2D matrix</strong>는 attention의 Q/K/V projection이나 MLP의 linear layer처럼
+        (input_dim, output_dim) 형태의 큰 행렬이에요. <strong>Embedding</strong>은 token ID를 vector로 변환하는 lookup table이에요.
+        <strong>Scalar/vector</strong>는 attn_scale, mlp_scale, resid_mix 같은 저차원 제어 parameter에요.
+      </p>
+      <p>
+        각각의 특성이 다르기 때문에, 한 가지 optimizer로 모두 최적화하면 learning rate나 momentum이 어느 한쪽에 맞지 않아요.
+        이 프로젝트에서는 각 유형에 맞는 optimizer와 learning rate를 따로 설정해요.
+      </p>
+      <table class="tbl">
+        <tr><th>Parameter 유형</th><th>Optimizer</th><th>Learning Rate</th></tr>
+        <tr><td>2D matrix</td><td><strong style="color:var(--white)">Muon</strong></td><td>0.04</td></tr>
+        <tr><td>Token embedding</td><td>Adam</td><td>0.05 (tied)</td></tr>
+        <tr><td>LM head (untied 시)</td><td>Adam</td><td>0.008</td></tr>
+        <tr><td>Scalar / vector</td><td>Adam</td><td>0.04</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="concept" onclick="this.classList.add('open')">
+    <div class="concept-head">
+      <span class="arrow">&#9654;</span>
+      <span class="num">2</span>
+      <h3>Adam: 적응형 학습률의 표준</h3>
+      <span class="brief">1차 모멘트 + 2차 모멘트</span>
+    </div>
+    <div class="concept-body">
+      <p>
+        Adam은 gradient의 1차 모멘트인 평균과 2차 모멘트인 분산을 추적하면서, 각 parameter마다 적응적으로 learning rate를 조절하는 optimizer에요.
+        Gradient가 일관되게 같은 방향이면 크게 움직이고, 불안정하면 작게 움직여요.
+      </p>
+      <p>
+        이 프로젝트에서 Adam은 embedding, scalar, vector parameter에 사용돼요.
+        이런 parameter들은 차원이 낮거나 특수한 역할을 하므로, Adam의 적응적 특성이 잘 맞아요.
+      </p>
+      <div class="codeblock">
+optimizer_tok = torch.optim.<span class="fn">Adam</span>(
+    [{<span class="str">"params"</span>: [base_model.tok_emb.weight],
+      <span class="str">"lr"</span>: token_lr, <span class="str">"base_lr"</span>: token_lr}],
+    betas=(<span class="num">0.9</span>, <span class="num">0.95</span>), eps=<span class="num">1e-8</span>, fused=<span class="kw">True</span>)
+
+optimizer_scalar = torch.optim.<span class="fn">Adam</span>(
+    [{<span class="str">"params"</span>: scalar_params,
+      <span class="str">"lr"</span>: <span class="num">0.04</span>, <span class="str">"base_lr"</span>: <span class="num">0.04</span>}],
+    betas=(<span class="num">0.9</span>, <span class="num">0.95</span>), eps=<span class="num">1e-8</span>, fused=<span class="kw">True</span>)</div>
+    </div>
+  </div>
+
+  <div class="concept" onclick="this.classList.add('open')">
+    <div class="concept-head">
+      <span class="arrow">&#9654;</span>
+      <span class="num">3</span>
+      <h3>Muon: 행렬 전용 optimizer</h3>
+      <span class="brief">Newton-Schulz 직교화</span>
+    </div>
+    <div class="concept-body">
+      <p>
+        Muon은 2D matrix parameter 전용으로 설계된 optimizer에요. 핵심 아이디어는 gradient를
+        <strong>직교 행렬</strong>로 변환한 뒤 적용하는 것이에요. 직교 행렬은 모든 singular value가 1인 행렬로,
+        업데이트의 방향만 유지하고 크기를 균일하게 만들어요.
+      </p>
+      <div class="analogy">
+        <p>
+          일반적인 optimizer가 "이 방향으로 이만큼 가라"고 지시한다면,
+          Muon은 "이 방향으로 가되, 모든 차원에서 동일한 보폭으로 가라"고 지시하는 것에 가까워요.
+          이렇게 하면 특정 방향으로 지나치게 큰 업데이트가 일어나는 것을 방지해요.
+        </p>
+      </div>
+      <div class="codeblock">
+<span class="kw">def</span> <span class="fn">zeropower_via_newtonschulz5</span>(G, steps=<span class="num">10</span>, eps=<span class="num">1e-7</span>):
+    <span class="cm"># Newton-Schulz 반복으로 행렬을 직교화</span>
+    a, b, c = (<span class="num">3.4445</span>, <span class="num">-4.7750</span>, <span class="num">2.0315</span>)
+    X = G.<span class="aq">bfloat16</span>()
+    X /= X.<span class="aq">norm</span>() + eps
+    <span class="kw">for</span> _ <span class="kw">in</span> <span class="bi">range</span>(steps):
+        A = X @ X.T
+        B = b <span class="op">*</span> A + c <span class="op">*</span> A @ A
+        X = a <span class="op">*</span> X + B @ X
+    <span class="kw">return</span> X</div>
+      <p>
+        Newton-Schulz iteration은 SVD를 계산하지 않고도 행렬을 직교화하는 빠른 방법이에요.
+        5번의 반복으로 충분히 좋은 근사치를 얻을 수 있어서, SVD 대비 훨씬 효율적이에요.
+      </p>
+    </div>
+  </div>
+
+  <div class="concept" onclick="this.classList.add('open')">
+    <div class="concept-head">
+      <span class="arrow">&#9654;</span>
+      <span class="num">4</span>
+      <h3>Muon의 분산 처리와 momentum</h3>
+      <span class="brief">GPU 간 작업 분배</span>
+    </div>
+    <div class="concept-body">
+      <p>
+        Newton-Schulz 직교화는 연산 비용이 있어요. Muon은 이를 여러 GPU에 분산시켜요.
+        각 GPU가 전체 parameter 중 자기 몫만 직교화한 뒤, <code>all_reduce</code>로 결과를 합쳐요.
+      </p>
+      <div class="codeblock">
+<span class="cm"># 각 GPU가 자기 몫의 parameter만 처리</span>
+<span class="kw">for</span> i, p <span class="kw">in</span> <span class="bi">enumerate</span>(params):
+    <span class="kw">if</span> i % world_size == rank <span class="kw">and</span> p.grad <span class="kw">is not</span> <span class="kw">None</span>:
+        buf.<span class="aq">mul_</span>(momentum).<span class="aq">add_</span>(g)          <span class="cm"># momentum 적용</span>
+        g = g.<span class="aq">add</span>(buf, alpha=momentum)        <span class="cm"># Nesterov</span>
+        g = <span class="fn">zeropower_via_newtonschulz5</span>(g)   <span class="cm"># 직교화</span>
+        g <span class="op">*</span>= <span class="bi">max</span>(<span class="num">1</span>, g.<span class="aq">size</span>(<span class="num">0</span>) / g.<span class="aq">size</span>(<span class="num">1</span>)) <span class="op">**</span> <span class="num">0.5</span>
+
+<span class="cm"># 결과를 모든 GPU에 합산</span>
+dist.<span class="aq">all_reduce</span>(updates_flat, op=dist.ReduceOp.SUM)</div>
+      <p>
+        Momentum도 0.85에서 시작해 500 step에 걸쳐 0.95까지 서서히 올려요.
+        초반에 momentum이 너무 높으면 학습이 불안정해질 수 있어서 이렇게 warmup을 적용해요.
+      </p>
+    </div>
+  </div>
+
+  <div class="quiz">
+    <h4>Check Your Understanding</h4>
+    <p>Muon optimizer에서 Newton-Schulz 직교화가 하는 역할은?</p>
+    <button class="quiz-opt" onclick="checkQuiz(this,'wrong','q6')">A. gradient의 크기를 0으로 만들어서 학습을 안정화한다</button>
+    <button class="quiz-opt" onclick="checkQuiz(this,'correct','q6')">B. gradient 행렬의 모든 singular value를 1로 만들어서 업데이트 크기를 균일하게 한다</button>
+    <button class="quiz-opt" onclick="checkQuiz(this,'wrong','q6')">C. gradient를 역행렬로 변환해서 수렴 속도를 높인다</button>
+    <button class="quiz-opt" onclick="checkQuiz(this,'wrong','q6')">D. gradient를 대각 행렬로 만들어서 연산량을 줄인다</button>
+    <div class="quiz-explain" id="q6">
+      Newton-Schulz iteration은 행렬의 singular value를 모두 1로 만드는 "zeropower" 연산이에요.
+      이렇게 하면 gradient의 방향 정보만 남기고 크기를 균일화해서, 특정 방향으로 과도한 업데이트가 일어나는 것을 방지해요.
+    </div>
+  </div>
+
+  <button class="next-ch" onclick="go(7)">Chapter 8: Training Loop &rarr;</button>
+</div>
+
+<!-- ====== CHAPTER 8 ====== -->
+<div class="chapter" id="ch7">
+  <div class="intro-box">
+    <span class="tag tag-ch">Chapter 8</span>
+    <span class="tag tag-topic">Training</span>
+    <h2>Training Loop: 20,000번의 반복</h2>
+    <p>
+      모델 구조와 optimizer가 준비되었으니, 이제 실제로 학습이 어떻게 진행되는지 살펴볼게요.
+      Gradient accumulation, learning rate scheduling, 분산 학습, wallclock 제한 등
+      이 프로젝트 training loop의 핵심 요소를 하나씩 풀어볼게요.
+    </p>
+  </div>
+
+  <div class="concept" onclick="this.classList.add('open')">
+    <div class="concept-head">
+      <span class="arrow">&#9654;</span>
+      <span class="num">1</span>
+      <h3>Gradient Accumulation: 작은 GPU로 큰 batch</h3>
+      <span class="brief">micro-step 합산</span>
+    </div>
+    <div class="concept-body">
+      <p>
+        이 프로젝트는 한 step당 524,288개의 token을 처리해요.
+        하지만 하나의 GPU에 이 전체를 한 번에 올릴 수 없으므로, 여러 <strong>micro-step</strong>으로 나눠서 처리해요.
+        각 micro-step에서 작은 batch의 gradient를 계산하고 누적한 뒤, 모든 micro-step이 끝나면 한 번에 parameter를 업데이트해요.
+      </p>
+      <div class="codeblock">
+grad_accum_steps = <span class="num">8</span> // world_size  <span class="cm"># GPU 수에 따라 조정</span>
+grad_scale = <span class="num">1.0</span> / grad_accum_steps
+
+<span class="kw">for</span> micro_step <span class="kw">in</span> <span class="bi">range</span>(grad_accum_steps):
+    x, y = train_loader.<span class="aq">next_batch</span>(...)
+    <span class="kw">with</span> torch.<span class="aq">autocast</span>(dtype=torch.bfloat16):
+        loss = model(x, y)
+    (loss <span class="op">*</span> grad_scale).<span class="aq">backward</span>()   <span class="cm"># gradient 누적</span>
+
+<span class="kw">for</span> opt <span class="kw">in</span> optimizers:
+    opt.<span class="aq">step</span>()                        <span class="cm"># 한 번에 업데이트</span></div>
+      <div class="analogy">
+        <p>
+          시험 공부에 비유하면, 한 챕터 전체를 한 번에 읽고 정리하는 대신,
+          섹션별로 읽으면서 메모를 모아두고, 챕터가 끝나면 모인 메모를 종합해서 노트를 갱신하는 것과 같아요.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <div class="concept" onclick="this.classList.add('open')">
+    <div class="concept-head">
+      <span class="arrow">&#9654;</span>
+      <span class="num">2</span>
+      <h3>Warmup과 Warmdown: 학습률 스케줄</h3>
+      <span class="brief">시작과 끝을 부드럽게</span>
+    </div>
+    <div class="concept-body">
+      <p>
+        학습 초반에는 parameter가 랜덤 상태이므로, 큰 learning rate를 바로 적용하면 불안정해질 수 있어요.
+        이 프로젝트는 <strong>warmup</strong> 20 step 동안 컴파일된 forward/backward 경로를 준비하고,
+        학습 마지막 1,200 step에서는 <strong>warmdown</strong>으로 learning rate를 점진적으로 0으로 줄여요.
+      </p>
+      <div class="codeblock">
+<span class="kw">def</span> <span class="fn">lr_mul</span>(step, elapsed_ms):
+    <span class="cm"># warmdown: 남은 시간 기반으로 lr을 점진적으로 줄임</span>
+    remaining_ms = max_wallclock_ms <span class="op">-</span> elapsed_ms
+    warmdown_ms = warmdown_iters <span class="op">*</span> step_ms
+    <span class="kw">if</span> remaining_ms <= warmdown_ms:
+        <span class="kw">return</span> remaining_ms / warmdown_ms
+    <span class="kw">return</span> <span class="num">1.0</span></div>
+      <div class="highlight hl-blue">
+        <strong>시간 기반 warmdown:</strong> 이 프로젝트의 warmdown은 step 수가 아니라 남은 wallclock 시간을 기준으로 동작해요.
+        10분 제한 안에서 최대한 학습하되, 끝이 가까워지면 자연스럽게 수렴하도록 설계된 것이에요.
+      </div>
+    </div>
+  </div>
+
+  <div class="concept" onclick="this.classList.add('open')">
+    <div class="concept-head">
+      <span class="arrow">&#9654;</span>
+      <span class="num">3</span>
+      <h3>분산 학습과 DDP</h3>
+      <span class="brief">여러 GPU 동기화</span>
+    </div>
+    <div class="concept-body">
+      <p>
+        여러 GPU를 사용할 때, PyTorch의 <strong>DistributedDataParallel: DDP</strong>이 gradient 동기화를 담당해요.
+        각 GPU가 서로 다른 데이터로 forward/backward를 수행하고, backward의 마지막 micro-step에서만 gradient를 동기화해요.
+      </p>
+      <div class="codeblock">
+<span class="cm"># 마지막 micro-step에서만 gradient 동기화</span>
+model.require_backward_grad_sync = (
+    micro_step == grad_accum_steps <span class="op">-</span> <span class="num">1</span>)</div>
+      <p>
+        이렇게 하면 중간 micro-step의 불필요한 통신을 줄여서 학습 속도를 높여요.
+        Wallclock 제한이 10분인 이 프로젝트에서 통신 비용 절감은 매우 중요해요.
+      </p>
+    </div>
+  </div>
+
+  <div class="concept" onclick="this.classList.add('open')">
+    <div class="concept-head">
+      <span class="arrow">&#9654;</span>
+      <span class="num">4</span>
+      <h3>Wallclock 제한과 Early Stopping</h3>
+      <span class="brief">10분 안에 끝내기</span>
+    </div>
+    <div class="concept-body">
+      <p>
+        이 프로젝트는 최대 20,000 iteration이지만, 실제로는 <strong>600초인 10분의 wallclock 제한</strong>이 먼저 도달해요.
+        시간 제한에 도달하면 학습을 중단하고 마지막 validation을 수행해요.
+      </p>
+      <div class="codeblock">
+reached_cap = approx_training_time_ms >= max_wallclock_ms
+<span class="kw">if</span> distributed:
+    <span class="cm"># 모든 GPU가 동의해야 멈춤</span>
+    dist.<span class="aq">all_reduce</span>(reached_cap_tensor, op=dist.ReduceOp.MAX)
+<span class="kw">if</span> reached_cap:
+    stop_after_step = step  <span class="cm"># 다음 step에서 정지</span></div>
+      <p>
+        분산 환경에서는 모든 GPU 중 하나라도 시간 제한에 도달하면 전체가 멈춰요.
+        <code>all_reduce</code>로 MAX를 취해서 가장 빠르게 제한에 도달한 GPU의 판단을 따르는 것이에요.
+      </p>
+    </div>
+  </div>
+
+  <div class="quiz">
+    <h4>Check Your Understanding</h4>
+    <p>Gradient accumulation에서 각 micro-step의 loss에 <code>grad_scale</code>을 곱하는 이유는?</p>
+    <button class="quiz-opt" onclick="checkQuiz(this,'wrong','q7')">A. gradient가 너무 크면 모델이 발산하므로 줄인다</button>
+    <button class="quiz-opt" onclick="checkQuiz(this,'wrong','q7')">B. mixed precision 연산에서 underflow를 방지한다</button>
+    <button class="quiz-opt" onclick="checkQuiz(this,'correct','q7')">C. 여러 micro-step의 gradient 합이 전체 batch의 평균 gradient와 같아지도록 한다</button>
+    <button class="quiz-opt" onclick="checkQuiz(this,'wrong','q7')">D. 학습률을 동적으로 조절하기 위해</button>
+    <div class="quiz-explain" id="q7">
+      각 micro-step에서 <code>loss * (1/grad_accum_steps)</code>를 backward하면,
+      누적된 gradient는 전체 batch에 대한 평균 gradient와 동일해져요.
+      이렇게 해야 gradient accumulation 유무와 관계없이 같은 학습 동작을 보장할 수 있어요.
+    </div>
+  </div>
+
+  <button class="next-ch" onclick="go(8)">Chapter 9: Quantization &rarr;</button>
+</div>
+
+<!-- ====== CHAPTER 9 ====== -->
+<div class="chapter" id="ch8">
+  <div class="intro-box">
+    <span class="tag tag-ch">Chapter 9</span>
+    <span class="tag tag-topic">Compression</span>
+    <h2>int8 Quantization과 zlib 압축</h2>
+    <p>
+      학습이 끝나면 모델을 제출해야 해요. 이 프로젝트의 제출 크기 제한은 <strong>16MB</strong>에요.
+      fp32 모델은 이 제한을 훨씬 초과하므로, int8 양자화와 zlib 압축을 거쳐야 해요.
+      핵심은 정밀도 손실을 최소화하면서 크기를 극적으로 줄이는 것이에요.
+    </p>
+  </div>
+
+  <div class="concept" onclick="this.classList.add('open')">
+    <div class="concept-head">
+      <span class="arrow">&#9654;</span>
+      <span class="num">1</span>
+      <h3>int8 양자화란?</h3>
+      <span class="brief">32-bit &rarr; 8-bit</span>
+    </div>
+    <div class="concept-body">
+      <p>
+        양자화는 높은 정밀도의 숫자를 낮은 정밀도로 변환하는 과정이에요.
+        fp32 weight는 한 값당 4 byte를 차지하지만, int8로 변환하면 1 byte로 줄어요.
+        이론적으로 4배 압축이에요.
+      </p>
+      <div class="analogy">
+        <p>
+          수채화 그림을 떠올려 보세요. 원본은 수백만 가지 색을 쓰지만,
+          제한된 팔레트인 256색으로 다시 그려도 눈으로 보기에 큰 차이가 없는 것과 비슷해요.
+          각 색의 미세한 차이는 사라지지만, 전체적인 그림은 유지돼요.
+        </p>
+      </div>
+      <div class="dia">
+        <svg viewBox="0 0 700 80">
+          <rect x="10" y="15" width="200" height="50" rx="10" fill="#e8e8e8"/>
+          <text x="110" y="37" text-anchor="middle" fill="#0a0a0a" font-size="11" font-weight="700">fp32 weight</text>
+          <text x="110" y="53" text-anchor="middle" fill="#505050" font-size="9">4 bytes per value</text>
+          <line x1="215" y1="40" x2="300" y2="40" stroke="#787878" stroke-width="1.2" marker-end="url(#a1d)"/>
+          <text x="257" y="32" text-anchor="middle" fill="#787878" font-size="9">quantize</text>
+          <rect x="305" y="15" width="170" height="50" rx="10" fill="var(--card)" stroke="var(--border)" stroke-width="1"/>
+          <text x="390" y="37" text-anchor="middle" fill="#b0b0b0" font-size="11" font-weight="600">int8 + scale</text>
+          <text x="390" y="53" text-anchor="middle" fill="#505050" font-size="9">~1.01 bytes per value</text>
+          <line x1="480" y1="40" x2="555" y2="40" stroke="#787878" stroke-width="1.2" marker-end="url(#a1d)"/>
+          <text x="517" y="32" text-anchor="middle" fill="#787878" font-size="9">zlib</text>
+          <rect x="560" y="15" width="130" height="50" rx="10" fill="var(--card)" stroke="var(--ac-purple-dim)" stroke-width="1"/>
+          <text x="625" y="37" text-anchor="middle" fill="var(--ac-purple)" font-size="11" font-weight="600">.int8.ptz</text>
+          <text x="625" y="53" text-anchor="middle" fill="#505050" font-size="9">&lt; 16MB</text>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <div class="concept" onclick="this.classList.add('open')">
+    <div class="concept-head">
+      <span class="arrow">&#9654;</span>
+      <span class="num">2</span>
+      <h3>Per-Row Scale: 행별 정밀도 보존</h3>
+      <span class="brief">2D matrix 전략</span>
+    </div>
+    <div class="concept-body">
+      <p>
+        단순히 전체 행렬에 하나의 scale을 적용하면, 값의 범위가 행마다 다를 때 정밀도가 크게 떨어져요.
+        이 프로젝트는 2D matrix에 <strong>per-row scale</strong>을 사용해요.
+        각 행마다 독립적인 scale factor를 두어서, 행별 값 범위 차이를 보존해요.
+      </p>
+      <div class="codeblock">
+<span class="kw">def</span> <span class="fn">quantize_float_tensor</span>(t32):
+    <span class="kw">if</span> t32.ndim == <span class="num">2</span>:
+        <span class="cm"># 행별로 quantile 클리핑 후 scale 계산</span>
+        clip_abs = torch.<span class="aq">quantile</span>(
+            t32.<span class="aq">abs</span>(), INT8_CLIP_Q, dim=<span class="num">1</span>)
+        scale = (clip_abs / <span class="num">127.0</span>).<span class="aq">clamp_min</span>(<span class="num">1.0</span>/<span class="num">127.0</span>)
+        q = torch.<span class="aq">round</span>(clipped / scale[:, <span class="kw">None</span>])
+        <span class="kw">return</span> q.<span class="aq">to</span>(torch.int8), scale</div>
+      <p>
+        <code>INT8_CLIP_Q</code>는 quantile 기반 clipping으로, 극단적인 outlier를 제거해서
+        나머지 값들의 정밀도를 높여요. 이 프로젝트에서는 0.9999 quantile을 사용해요.
+      </p>
+    </div>
+  </div>
+
+  <div class="concept" onclick="this.classList.add('open')">
+    <div class="concept-head">
+      <span class="arrow">&#9654;</span>
+      <span class="num">3</span>
+      <h3>작은 tensor는 양자화하지 않는다</h3>
+      <span class="brief">fp16 passthrough</span>
+    </div>
+    <div class="concept-body">
+      <p>
+        모든 tensor를 int8로 바꾸는 건 아니에요. 원소 수가 적은 tensor는 양자화 오차가 상대적으로 크고,
+        int8 + scale의 오버헤드가 오히려 손해에요. 이런 tensor는 fp16으로 캐스팅해서 그대로 저장해요.
+      </p>
+      <div class="highlight hl-white">
+        <strong>판단 기준:</strong> <code>INT8_KEEP_FLOAT_MAX_NUMEL</code> 이하의 원소를 가진 tensor는
+        양자화 없이 fp16으로 저장돼요. attn_scale, mlp_scale 같은 scalar parameter가 여기에 해당해요.
+      </div>
+    </div>
+  </div>
+
+  <div class="concept" onclick="this.classList.add('open')">
+    <div class="concept-head">
+      <span class="arrow">&#9654;</span>
+      <span class="num">4</span>
+      <h3>zlib 압축과 Roundtrip 검증</h3>
+      <span class="brief">최종 크기 줄이기</span>
+    </div>
+    <div class="concept-body">
+      <p>
+        int8 양자화 후에도 추가로 zlib 압축을 적용해요. zlib는 데이터의 반복 패턴을 찾아서 무손실 압축하는 알고리즘이에요.
+        최종 파일 확장자 <code>.int8.ptz</code>는 이 양자화+압축 포맷을 나타내요.
+      </p>
+      <div class="codeblock">
+quant_obj, quant_stats = <span class="fn">quantize_state_dict_int8</span>(
+    base_model.<span class="aq">state_dict</span>())
+quant_buf = io.<span class="fn">BytesIO</span>()
+torch.<span class="aq">save</span>(quant_obj, quant_buf)
+quant_blob = zlib.<span class="aq">compress</span>(quant_buf.<span class="aq">getvalue</span>(), level=<span class="num">9</span>)
+
+<span class="cm"># Roundtrip 검증: 압축 해제 → 복원 → 다시 평가</span>
+quant_state = torch.<span class="aq">load</span>(
+    io.<span class="fn">BytesIO</span>(zlib.<span class="aq">decompress</span>(quant_blob_disk)))
+base_model.<span class="aq">load_state_dict</span>(
+    <span class="fn">dequantize_state_dict_int8</span>(quant_state))</div>
+      <div class="highlight hl-red">
+        <strong>Roundtrip 검증이 필수인 이유:</strong> 양자화는 손실 과정이에요.
+        압축된 모델을 다시 복원했을 때 성능이 얼마나 떨어지는지 반드시 확인해야 해요.
+        이 프로젝트는 roundtrip 후 val_loss와 val_bpb를 재측정해요.
+      </div>
+    </div>
+  </div>
+
+  <div class="quiz">
+    <h4>Check Your Understanding</h4>
+    <p>이 프로젝트에서 per-row scale을 사용하는 이유는?</p>
+    <button class="quiz-opt" onclick="checkQuiz(this,'wrong','q8')">A. 행렬 곱셈을 더 빠르게 하기 위해</button>
+    <button class="quiz-opt" onclick="checkQuiz(this,'wrong','q8')">B. GPU 메모리를 절약하기 위해</button>
+    <button class="quiz-opt" onclick="checkQuiz(this,'correct','q8')">C. 행마다 값 범위가 다를 수 있어서, 각 행의 정밀도를 독립적으로 보존하기 위해</button>
+    <button class="quiz-opt" onclick="checkQuiz(this,'wrong','q8')">D. zlib 압축률을 높이기 위해</button>
+    <div class="quiz-explain" id="q8">
+      2D matrix의 각 행은 서로 다른 output channel에 대응하며, 값의 분포가 행마다 다를 수 있어요.
+      per-tensor scale은 전체에서 가장 큰 값에 맞추므로 작은 값들의 정밀도가 떨어지지만,
+      per-row scale은 각 행의 범위에 맞춰서 모든 행의 정밀도를 균일하게 유지해요.
+    </div>
+  </div>
+
+  <button class="next-ch" onclick="go(9)">Chapter 10: bits-per-byte &rarr;</button>
+</div>
+
+<!-- ====== CHAPTER 10 ====== -->
+<div class="chapter" id="ch9">
+  <div class="intro-box">
+    <span class="tag tag-ch">Chapter 10</span>
+    <span class="tag tag-topic">Evaluation</span>
+    <h2>bits-per-byte: 공정한 평가 지표</h2>
+    <p>
+      모델이 얼마나 "잘" 학습되었는지 어떻게 측정할까요? Cross-entropy loss만으로는 서로 다른 tokenizer를 쓰는 모델을 비교할 수 없어요.
+      이 프로젝트는 <strong>bits-per-byte</strong>라는 tokenizer에 독립적인 지표를 사용해요.
+    </p>
+  </div>
+
+  <div class="concept" onclick="this.classList.add('open')">
+    <div class="concept-head">
+      <span class="arrow">&#9654;</span>
+      <span class="num">1</span>
+      <h3>왜 loss만으로는 부족한가</h3>
+      <span class="brief">tokenizer 의존성 문제</span>
+    </div>
+    <div class="concept-body">
+      <p>
+        Cross-entropy loss는 "token당 평균 정보 손실"을 측정해요.
+        그런데 같은 텍스트라도 vocab=1024인 tokenizer는 vocab=100K보다 훨씬 많은 token을 만들어요.
+        Token이 많으면 개별 예측이 쉬워지므로 loss가 낮아 보이지만, 이건 모델이 뛰어난 게 아니라 tokenizer가 세밀한 것일 뿐이에요.
+      </p>
+      <div class="highlight hl-purple">
+        <strong>공정한 비교의 핵심:</strong> 모델 성능을 tokenizer 설계와 분리해야 해요.
+        bits-per-byte는 원본 텍스트의 byte 단위로 정보 효율을 측정하므로, tokenizer가 달라도 공정하게 비교할 수 있어요.
+      </div>
+    </div>
+  </div>
+
+  <div class="concept" onclick="this.classList.add('open')">
+    <div class="concept-head">
+      <span class="arrow">&#9654;</span>
+      <span class="num">2</span>
+      <h3>bits-per-byte 계산 원리</h3>
+      <span class="brief">nats &rarr; bits &rarr; bytes</span>
+    </div>
+    <div class="concept-body">
+      <p>
+        bits-per-byte는 세 단계로 계산돼요.
+        먼저 cross-entropy loss를 nat 단위에서 bit 단위로 변환하고,
+        token당 bit를 byte당 bit로 변환해요.
+      </p>
+      <div class="codeblock">
+<span class="cm"># 1. token별 loss 합산</span>
+loss_sum += per_token_loss.<span class="aq">sum</span>()
+
+<span class="cm"># 2. token이 나타내는 byte 수 합산</span>
+tok_bytes = base_bytes_lut[target_ids]
+tok_bytes += has_leading_space_lut[target_ids] \
+           <span class="op">&amp;</span> ~is_boundary_token_lut[prev_ids]
+byte_sum += tok_bytes.<span class="aq">sum</span>()
+
+<span class="cm"># 3. bits-per-byte = total_loss_in_bits / total_bytes</span>
+val_bpb = (loss_sum / <span class="fn">ln</span>(<span class="num">2</span>)) / byte_sum</div>
+      <p>
+        <code>base_bytes_lut</code>는 Ch.2에서 만든 lookup table이에요. 각 token이 원본 텍스트에서 몇 byte를 차지하는지 기록해요.
+        공백 처리도 섬세해요. SentencePiece의 <code>&#9601;</code> 기호가 나타내는 선행 공백 1 byte를 정확히 반영해요.
+      </p>
+    </div>
+  </div>
+
+  <div class="concept" onclick="this.classList.add('open')">
+    <div class="concept-head">
+      <span class="arrow">&#9654;</span>
+      <span class="num">3</span>
+      <h3>bits-per-byte의 직관적 의미</h3>
+      <span class="brief">압축 효율의 척도</span>
+    </div>
+    <div class="concept-body">
+      <p>
+        bits-per-byte가 1.0이면, 모델이 원본 텍스트를 8분의 1 크기로 압축할 수 있다는 뜻이에요.
+        원래 byte당 8 bit가 필요한데 1 bit만 있으면 된다는 것이니까요.
+        값이 낮을수록 모델이 텍스트를 더 잘 "이해"하고 있다는 의미에요.
+      </p>
+      <table class="tbl">
+        <tr><th>bits-per-byte</th><th>의미</th></tr>
+        <tr><td>8.0</td><td>예측 없음. 완전한 무작위 추측</td></tr>
+        <tr><td>~5.0</td><td>기초적인 문자 빈도 수준의 예측</td></tr>
+        <tr><td>~1.0</td><td>매우 좋은 language model</td></tr>
+        <tr><td>&lt; 0.8</td><td>최신 대형 모델 수준</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="quiz">
+    <h4>Check Your Understanding</h4>
+    <p>Vocab=1024인 모델 A와 vocab=32000인 모델 B가 같은 cross-entropy loss를 기록했어요. bits-per-byte는 어떤 모델이 더 낮을까요?</p>
+    <button class="quiz-opt" onclick="checkQuiz(this,'wrong','q9')">A. 모델 A가 더 낮다</button>
+    <button class="quiz-opt" onclick="checkQuiz(this,'correct','q9')">B. 모델 B가 더 낮다</button>
+    <button class="quiz-opt" onclick="checkQuiz(this,'wrong','q9')">C. 둘 다 같다</button>
+    <button class="quiz-opt" onclick="checkQuiz(this,'wrong','q9')">D. 정보가 부족해서 알 수 없다</button>
+    <div class="quiz-explain" id="q9">
+      같은 loss라도, vocab=32000인 모델 B의 token은 더 많은 byte를 나타내요.
+      bits-per-byte는 (loss_in_bits * tokens) / total_bytes이므로, token당 더 많은 byte를 커버하는 B의 bits-per-byte가 더 낮아요.
+      이것이 바로 loss만으로 비교하면 안 되는 이유이기도 해요.
+    </div>
+  </div>
+
+  <button class="next-ch" onclick="go(10)">Chapter 11: Test-Time Training &rarr;</button>
+</div>
+
+<!-- ====== CHAPTER 11 ====== -->
+<div class="chapter" id="ch10">
+  <div class="intro-box">
+    <span class="tag tag-ch">Chapter 11</span>
+    <span class="tag tag-topic">Advanced</span>
+    <h2>Test-Time Training: per-document LoRA 적응</h2>
+    <p>
+      보통 모델은 학습이 끝나면 weight가 고정되고, 평가 시에는 그대로 사용해요.
+      이 프로젝트는 한 발 더 나아가서, <strong>평가 시에도 각 문서에 맞춰 모델을 미세 조정</strong>해요.
+      이 기법을 Test-Time Training: TTT이라 부르고, LoRA를 사용해서 효율적으로 구현해요.
+    </p>
+  </div>
+
+  <div class="concept" onclick="this.classList.add('open')">
+    <div class="concept-head">
+      <span class="arrow">&#9654;</span>
+      <span class="num">1</span>
+      <h3>LoRA: 적은 parameter로 적응하기</h3>
+      <span class="brief">Low-Rank Adaptation</span>
+    </div>
+    <div class="concept-body">
+      <p>
+        LoRA: Low-Rank Adaptation은 기존 weight를 고정하고, 작은 추가 행렬만 학습해서 모델을 적응시키는 기법이에요.
+        원래 weight matrix W에 저차원 행렬 B와 A의 곱인 <strong>&#916;W = BA</strong>를 더해요.
+        A의 크기는 (rank, input_dim), B는 (output_dim, rank)로 rank가 작으면 추가 parameter가 매우 적어요.
+      </p>
+      <div class="dia">
+        <svg viewBox="0 0 700 100">
+          <rect x="10" y="25" width="160" height="50" rx="10" fill="#e8e8e8"/>
+          <text x="90" y="47" text-anchor="middle" fill="#0a0a0a" font-size="11" font-weight="700">x (input)</text>
+          <text x="90" y="63" text-anchor="middle" fill="#505050" font-size="9">(batch, seq, dim)</text>
+          <line x1="175" y1="50" x2="235" y2="30" stroke="#787878" stroke-width="1" marker-end="url(#a1d)"/>
+          <line x1="175" y1="50" x2="235" y2="70" stroke="var(--ac-purple-dim)" stroke-width="1" marker-end="url(#a1d)"/>
+          <rect x="240" y="5" width="180" height="40" rx="8" fill="var(--card)" stroke="var(--border)" stroke-width="1"/>
+          <text x="330" y="22" text-anchor="middle" fill="#b0b0b0" font-size="10" font-weight="600">W (frozen base)</text>
+          <text x="330" y="38" text-anchor="middle" fill="#505050" font-size="9">(dim, out_dim)</text>
+          <rect x="240" y="55" width="180" height="40" rx="8" fill="var(--card)" stroke="var(--ac-purple-dim)" stroke-width="1"/>
+          <text x="330" y="72" text-anchor="middle" fill="var(--ac-purple)" font-size="10" font-weight="600">BA (LoRA adapter)</text>
+          <text x="330" y="88" text-anchor="middle" fill="#505050" font-size="9">rank=8, trainable</text>
+          <line x1="425" y1="25" x2="495" y2="50" stroke="#787878" stroke-width="1" marker-end="url(#a1d)"/>
+          <line x1="425" y1="75" x2="495" y2="50" stroke="var(--ac-purple-dim)" stroke-width="1" marker-end="url(#a1d)"/>
+          <text x="478" y="42" text-anchor="middle" fill="#787878" font-size="9">+</text>
+          <rect x="500" y="25" width="170" height="50" rx="10" fill="#e8e8e8"/>
+          <text x="585" y="47" text-anchor="middle" fill="#0a0a0a" font-size="11" font-weight="700">output</text>
+          <text x="585" y="63" text-anchor="middle" fill="#505050" font-size="9">x@W + x@A&#7488;@B&#7488;</text>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <div class="concept" onclick="this.classList.add('open')">
+    <div class="concept-head">
+      <span class="arrow">&#9654;</span>
+      <span class="num">2</span>
+      <h3>문서별 독립 적응: Batched LoRA</h3>
+      <span class="brief">각 문서마다 별도 adapter</span>
+    </div>
+    <div class="concept-body">
+      <p>
+        이 프로젝트에서 TTT의 핵심은 <strong>문서 경계를 기준으로 각 문서마다 독립적인 LoRA adapter를 학습</strong>하는 것이에요.
+        BOS token으로 문서 경계를 식별하고, 각 문서를 chunk로 나눠서 순차적으로 적응해요.
+      </p>
+      <div class="codeblock">
+<span class="kw">class</span> <span class="fn">BatchedTTTLoRA</span>(nn.Module):
+    <span class="cm"># 각 batch element마다 독립적인 LoRA adapter</span>
+    <span class="kw">def</span> <span class="fn">__init__</span>(self, bsz, model, rank):
+        self.lm_head_lora = <span class="fn">BatchedLinearLoRA</span>(
+            bsz, dim, vocab, rank)
+        self.q_loras = nn.<span class="fn">ModuleList</span>()
+        self.v_loras = nn.<span class="fn">ModuleList</span>()
+        <span class="kw">for</span> block <span class="kw">in</span> model.blocks:
+            self.q_loras.<span class="aq">append</span>(
+                <span class="fn">BatchedLinearLoRA</span>(...))  <span class="cm"># Q projection</span>
+            self.v_loras.<span class="aq">append</span>(
+                <span class="fn">BatchedLinearLoRA</span>(...))  <span class="cm"># V projection</span></div>
+      <p>
+        Adapter는 LM head, 그리고 각 block의 Q와 V projection에 적용돼요.
+        K에는 적용하지 않아요. Q와 V만으로도 충분한 적응 능력을 확보하면서 parameter를 절약해요.
+      </p>
+    </div>
+  </div>
+
+  <div class="concept" onclick="this.classList.add('open')">
+    <div class="concept-head">
+      <span class="arrow">&#9654;</span>
+      <span class="num">3</span>
+      <h3>Chunk 단위 학습과 평가 흐름</h3>
+      <span class="brief">score-then-train</span>
+    </div>
+    <div class="concept-body">
+      <p>
+        각 문서를 256 token 크기의 chunk로 나눠요.
+        매 chunk에서의 순서는 "먼저 점수를 매기고, 그 다음 학습"이에요.
+        현재 chunk에 대한 loss를 bits-per-byte 계산에 기록한 뒤, 그 chunk의 loss로 LoRA adapter를 업데이트해요.
+        이렇게 하면 다음 chunk 예측 시 이전 chunk에서 배운 패턴을 활용할 수 있어요.
+      </p>
+      <div class="highlight hl-purple">
+        <strong>Score-then-train:</strong> 한 chunk의 loss를 평가에 사용한 뒤 학습에도 사용해요.
+        평가와 학습이 분리된 것이 아니라, 평가 직후 같은 데이터로 학습해서 다음 chunk 예측을 개선해요.
+        마지막 chunk는 학습 없이 평가만 해요. 이미 이후에 활용할 chunk가 없으니까요.
+      </div>
+    </div>
+  </div>
+
+  <div class="concept" onclick="this.classList.add('open')">
+    <div class="concept-head">
+      <span class="arrow">&#9654;</span>
+      <span class="num">4</span>
+      <h3>TTT가 중요한 이유: 대회 점수 산출</h3>
+      <span class="brief">최종 val_bpb</span>
+    </div>
+    <div class="concept-body">
+      <p>
+        이 프로젝트에서 TTT LoRA의 결과가 <strong>최종 대회 점수</strong>에요.
+        학습 완료 후 int8+zlib roundtrip을 거친 모델에 TTT LoRA를 적용해서 측정한 val_bpb가 최종 제출 점수에요.
+      </p>
+      <div class="codeblock">
+<span class="cm"># 최종 대회 점수 산출</span>
+torch._dynamo.<span class="aq">reset</span>()
+ttt_val_loss, ttt_val_bpb = <span class="fn">eval_val_ttt_lora</span>(
+    args, base_model, rank, world_size, device,
+    base_bytes_lut, has_leading_space_lut,
+    is_boundary_token_lut)</div>
+      <p>
+        기본 모델의 val_bpb보다 TTT를 적용한 val_bpb가 더 낮아요.
+        문서별 적응이 예측 성능을 실질적으로 개선한다는 증거에요.
+      </p>
+    </div>
+  </div>
+
+  <div class="quiz">
+    <h4>Final Check</h4>
+    <p>TTT LoRA에서 마지막 chunk는 학습 없이 평가만 하는 이유는?</p>
+    <button class="quiz-opt" onclick="checkQuiz(this,'wrong','q10')">A. 마지막 chunk는 데이터가 부족해서</button>
+    <button class="quiz-opt" onclick="checkQuiz(this,'wrong','q10')">B. 과적합을 방지하기 위해</button>
+    <button class="quiz-opt" onclick="checkQuiz(this,'correct','q10')">C. 학습의 목적이 이후 chunk 예측 개선인데, 마지막 chunk 이후에는 예측할 것이 없으므로</button>
+    <button class="quiz-opt" onclick="checkQuiz(this,'wrong','q10')">D. 메모리 부족 때문에</button>
+    <div class="quiz-explain" id="q10">
+      TTT의 학습은 "다음 chunk를 더 잘 예측하기 위한" 것이에요.
+      마지막 chunk 이후에는 예측할 데이터가 없으므로, 학습하는 것이 무의미해요.
+      이때 gradient graph를 유지하지 않으므로 메모리도 절약돼요.
+    </div>
+  </div>
+
+  <div class="highlight hl-purple" style="margin-top:32px">
+    <strong>전체 파이프라인 요약:</strong> 텍스트가 BPE tokenizer로 정수 ID가 되고, binary shard에 저장돼요.
+    학습 시 TokenStream이 데이터를 읽고 GPU에 분배해요. Token ID는 embedding으로 vector가 되고,
+    9개 transformer block을 통과해요. Muon과 Adam이 각각 matrix와 scalar parameter를 최적화해요.
+    20,000 step 또는 10분 후 학습이 끝나면, int8 양자화 + zlib 압축으로 16MB 이하로 줄여요.
+    최종 평가는 양자화된 모델에 per-document LoRA TTT를 적용해서 bits-per-byte를 측정해요.
+  </div>
+</div>
+
+</div>
+
+<script>
+function go(idx){
+  document.querySelectorAll('.chapter').forEach((c,i)=>c.classList.toggle('active',i===idx));
+  document.querySelectorAll('.ch-btn').forEach((b,i)=>b.classList.toggle('active',i===idx));
+  document.getElementById('progress').style.width=((idx+1)/11*100)+'%';
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function checkQuiz(btn,result,explainId){
+  const p=btn.closest('.quiz');
+  if(p.dataset.answered)return;
+  p.dataset.answered='1';
+  btn.classList.add(result);
+  if(result==='wrong')p.querySelectorAll('.quiz-opt').forEach(b=>{if(b.getAttribute('onclick').includes("'correct'"))b.classList.add('correct')});
+  document.getElementById(explainId).style.display='block';
+}
+</script>
+</body>
+</html>
